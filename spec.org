@@ -64,13 +64,7 @@ It is important to understand the difference between sending a message to an obj
 
 *** Interface
 
-Since objects are created by sending a clone message to other objects, there has to be a kind of root object. The object system provides a procedure to create such root objects.
-
-**** make-root-object - /procedure/
-
-~(make-root-object)~
-
-This creates a new root object from which other objects can be cloned. This object is independent of any other object, and thus creates a new inheritance tree.
+Since objects are created by sending a clone message to other objects, there has to be a kind of root object.
 
 **** ~*the-root-object*~ - /class/
 

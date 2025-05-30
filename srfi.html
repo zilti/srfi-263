@@ -70,7 +70,7 @@ will not appear in the final SRFI.</p>
 
     <h4 id="spec-objsystem-inheritance">Inheritance</h4>
 
-    <p>Where a slot for a message is not found in the current object, all its parent slots are queried recursively, i.e. parent objects which don't know the slot query their parents recursively.</p>
+    <p>When a slot for a message is not found in the current object, all its parent slots are queried recursively, i.e. parent objects which don't know the slot query their parents recursively.</p>
 
     <p>If no parent knows the slot, the original message receiving object is sent a message-not-understood message. If more than one parent knows the slot, the original message receiving object is sent an ambiguous-message-send message. See «Root Objects» for a documentation of those messages. By default, they signal an error.</p>
 
@@ -80,13 +80,7 @@ will not appear in the final SRFI.</p>
 
     <h4 id="spec-objsystem-interface">Interface</h4>
 
-    <p>Since objects are created by sending a clone message to other objects, there has to be a kind of root object. The object system provides a procedure to create such root objects.</p>
-
-    <h5 id="spec-objsystem-make-root-object"><code>make-root-object</code> - <i>procedure</i></h5>
-
-    <p><code>(make-root-object)</code></p>
-
-    <p>This creates a new root object from which other objects can be cloned. This object is independent of any other object, and thus creates a new inheritance tree.</p>
+    <p>Since objects are created by sending a clone message to other objects, there has to be a kind of root object.</p>
 
     <h5 id="spec-objsystem-the-root-object"><code>*the-root-object*</code> - <i>class</i></h5>
 
