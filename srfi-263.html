@@ -6,12 +6,12 @@ SPDX-License-Identifier: MIT
 -->
   <head>
     <meta charset="utf-8">
-    <title>SRFI ###: ???title???</title>
+    <title>SRFI 263: Prototype Object System</title>
     <link href="/favicon.png" rel="icon" sizes="192x192" type="image/png">
     <link rel="stylesheet" href="https://srfi.schemers.org/srfi.css" type="text/css">
     <meta name="viewport" content="width=device-width, initial-scale=1"></head>
   <body>
-    <h1><a href="https://srfi.schemers.org/"><img class="srfi-logo" src="https://srfi.schemers.org/srfi-logo.svg" alt="SRFI surfboard logo" /></a>###: ???title???</h1>
+    <h1><a href="https://srfi.schemers.org/"><img class="srfi-logo" src="https://srfi.schemers.org/srfi-logo.svg" alt="SRFI surfboard logo" /></a>263: Prototype Object System</h1>
 
 <p>by ???author(s)???</p>
 
@@ -64,7 +64,7 @@ will not appear in the final SRFI.</p>
 
     <h4 id="spec-objsystem-messages">Messages</h4>
 
-    <p>Following the original concepts of object oriented programming, SRFI-??? uses messages to communicate with and between objects. To send a message to an object, the object has to be invoked with the target slot as first argument, with the slot's arguments appended as further arguments. Sending a new <code>x</code> coordinate to a <code>point</code> object looks like this:</p>
+    <p>Following the original concepts of object oriented programming, SRFI-263 uses messages to communicate with and between objects. To send a message to an object, the object has to be invoked with the target slot as first argument, with the slot's arguments appended as further arguments. Sending a new <code>x</code> coordinate to a <code>point</code> object looks like this:</p>
 
     <p><code>(pointobj 'set-x! 50)</code></p>
 
@@ -150,7 +150,7 @@ will not appear in the final SRFI.</p>
       <li>type, which is one of the symbols <code>value</code>, <code>method</code>, or <code>parent</code>
     </ul>
 
-    <h3 id="spec-sugar">Syntactic Sugar <code>(srfi ??? syntax)</code></h3>
+    <h3 id="spec-sugar">Syntactic Sugar <code>(srfi 263 syntax)</code></h3>
 
     <h4 id="spec-sugar-define-method"><code>define-method (obj message self resend . args) body ...</code> - <i>syntax</i></h4>
 
