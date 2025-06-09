@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <!--
-SPDX-FileCopyrightText: [year] [copyright holder]
+SPDX-FileCopyrightText: 2025 Daniel Ziltener
 SPDX-License-Identifier: MIT
 -->
   <head>
@@ -13,7 +13,7 @@ SPDX-License-Identifier: MIT
   <body>
     <h1><a href="https://srfi.schemers.org/"><img class="srfi-logo" src="https://srfi.schemers.org/srfi-logo.svg" alt="SRFI surfboard logo" /></a>263: Prototype Object System</h1>
 
-<p>by ???author(s)???</p>
+<p>by Daniel Ziltener</p>
 
 <h2 id="status">Status</h2>
 
@@ -29,8 +29,7 @@ The editor will add this section.</p>
 
 <h2 id="issues">Issues</h2>
 
-<p>??? Optional section that may point out things to be resolved.  This
-will not appear in the final SRFI.</p>
+<p>None at present.</p>
 
 <h2 id="rationale">Rationale</h2>
 
@@ -54,13 +53,13 @@ will not appear in the final SRFI.</p>
       <li>Method slots store a procedure which is invoked for messages corresponding to this slot.</li>
     </ul>
 
-    <p>Method slot procedures are called with at least two arguments, which should be called self and resend. If the message received any arguments, they are passed as additional positional arguments. Self is the object which received the message. Resend is a procedure which can be used to resend the message to further parents, if the current method does not wish to handle the message. (See "Inheritance" for more information about this).</p>
+    <p>Method slot procedures are called with at least two arguments, which should be called self and resend. If the message received any arguments, they are passed as additional positional arguments. Self is the object which received the message. Resend is a procedure which can be used to resend the message to further parents if the current method does not wish to handle the message. (See "Inheritance" for more information about this).</p>
 
     <p>A typical method handler could thus look like this:</p>
 
     <p><code>(lambda (self resend a b) (/ (+ a b) 2))</code></p>
 
-    <p>Every slot, regardless of its kind, can be associated with a setter method when it is created. Setter methods receive a single argument, and replaces the value of the corresponding slot with this argument. Setter methods can be created automatically when a given slot is created, and are removed when the corresponding getter slot is removed (but not vice versa). Because of this, they are sometimes not considered to be slots, even though they are. See «Setters are Methods» for an example where this distinction is important.</p>
+    <p>Every slot, regardless of its kind, can be associated with a setter method when it is created. Setter methods receive a single argument, and replace the value of the corresponding slot with this argument. Setter methods can be created automatically when a given slot is created, and are removed when the corresponding getter slot is removed (but not vice versa). Because of this, they are sometimes not considered to be slots, even though they are. See «Setters are Methods» for an example where this distinction is important.</p>
 
     <h4 id="spec-objsystem-messages">Messages</h4>
 
@@ -74,9 +73,9 @@ will not appear in the final SRFI.</p>
 
     <p>If no parent knows the slot, the original message receiving object is sent a message-not-understood message. If more than one parent knows the slot, the original message receiving object is sent an ambiguous-message-send message. See «Root Objects» for a documentation of those messages. By default, they signal an error.</p>
 
-    <p>Method slots can decide not to handle a message, but rather pass it up the inheritance tree for other handlers. For this purpose, they are passed a procedure commonly called <code>resend</code>. See «Slots» For an explanation of method slots.</p>
+    <p>Method slots can decide not to handle a message, but rather pass it up the inheritance tree for other handlers. For this purpose, they are passed a procedure commonly called <code>resend</code>. See «Slots» for an explanation of method slots.</p>
 
-    <p>It is important to understand the difference between sending a message to an object, and resending it to the object. When a message is just sent to an object, methods will get that object as the <code>self</code> argument. When a message is resent, <code>self</code> instead refers to the object it was originally sent to.</p>
+    <p>It is important to understand the difference between sending a message to an object and re-sending it to the object. When a message is just sent to an object, methods will get that object as the <code>self</code> argument. When a message is resent, <code>self</code> instead refers to the object it was originally sent to.</p>
 
     <h4 id="spec-objsystem-interface">Interface</h4>
 
@@ -84,7 +83,7 @@ will not appear in the final SRFI.</p>
 
     <h5 id="spec-objsystem-the-root-object"><code>*the-root-object*</code> - <i>class</i></h5>
 
-    <p>This is the default root object. If not really intended otherwise, this should be used as the root of the object hierarchy in a program.</p>
+    <p>This is the default root object. This should be used as the root of the object hierarchy in a program.</p>
 
     <p>Root objects contain a number of slots by default.</p>
 
@@ -102,13 +101,13 @@ will not appear in the final SRFI.</p>
 
     <h5 id="spec-objsystem-add-method-slot"><code>add-method-slot! getter [setter] proc</code> - <i>message</i></h5>
 
-    <p>Add a method slot to the recipient. The slot procedure can be invoked with the getter message. The procedure will be invoked with a <code>self</code> argument pointing to the object that received the message, a <code>resend</code> procedure to resend the message if the method does not want to handle it directly, and all further arguments passed to the message send.</p>
+    <p>Add a method slot to the recipient. The slot procedure can be invoked with the getter message. The procedure will be invoked with a <code>self</code> argument bound to the object that received the message, a <code>resend</code> procedure to resend the message if the method does not want to handle it directly, and all further arguments passed to the message send.</p>
 
     <p>If a setter message is given, it can be used to change the procedure.</p>
 
     <h5 id="spec-objsystem-add-parent-slot"><code>add-parent-slot! getter [setter] parent</code> - <i>message</i></h5>
 
-    <p>Add a parent slot to the recipient. Parent slots are searched for slots not found directly In the object. The setter message, if given, can be used to later change the value of the parent slot.</p>
+    <p>Add a parent slot to the recipient. Parent slots are searched for slots not found directly in the object. The setter message, if given, can be used to later change the value of the parent slot.</p>
 
     <h5 id="spec-objsystem-delete-slot"><code>delete-slot! name</code> - <i>message</i></h5>
 
@@ -124,7 +123,7 @@ will not appear in the final SRFI.</p>
 
     <h4 id="spec-mirror">Mirror Interface</h4>
 
-    <p>Sending the <code>mirror</code> message to an object returns that object's mirror. A mirror is a special class with slots that allow to investigate the mirrored object.</p>
+    <p>Sending the <code>mirror</code> message to an object returns that object's mirror. A mirror is a special class with slots that allow one to investigate the mirrored object.</p>
 
     <h5 id="spec-mirror-is-descendant"><code>has-ancestor object</code> - <i>message</i></h5>
 
@@ -190,11 +189,11 @@ will not appear in the final SRFI.</p>
         ((add self resend summand)
           (+ summand (self 'constant))))</code></p>
 
-    <h3 id="spec-further">Further Concepts and Toughts</h3>
+    <h3 id="spec-further">Further Concepts and Thoughts</h3>
 
     <h4 id="spec-further-private-messages">Private Messages</h4>
 
-    <p>Message names don't have any required type. They are only compared using <code>eq?</code>. Because of this, any kind of Scheme object can be used a message name. This means that it is possible to use a private Scheme value - e.g. a freshly-allocated list - as a slot name. This can be used to keep slot names private, since it is not possible to create an object which is <code>eq?</code> to such an object except by receiving a reference to that object.</p>
+    <p>Message names don't have any required type. They are only compared using <code>eq?</code>. Because of this, any Scheme object can be used a message name. This means that it is possible to use a private Scheme value, e.g. a freshly allocated list, as a slot name. This can be used to keep slot names private, since it is not possible to create an object which is <code>eq?</code> to such an object except by receiving a reference to that object.</p>
 
 <p>Please follow the linguistic conventions described in the <a
 href="/srfi-faq.html#conventions">FAQ</a>.  In particular, please
@@ -213,20 +212,15 @@ Implementations may signal an error, assign some new meaning to
 
 <h2 id="implementation">Implementation</h2>
 
-<p>??? explanation of how it meets the sample implementation
+<p style="color: red;">??? explanation of how it meets the sample implementation
 requirement (see <a href="srfi-process.html">process</a>), and the
 code, if possible, or a link to it</p>
 
-<p>We use the phrase <dfn>sample implementation</dfn> instead of
-<dfn>reference implementation</dfn> because the latter implies that
-the implementation itself is the source of truth, whereas for SRFIs,
-the document is normative.</p>
-
-<a href="srfi-minus-???-sample.scm">Source for the sample implementation.</a>
+<a href="srfi-minus-???-sample.scm" style="color: red;">Source for the sample implementation.</a>
 
 <h2 id="acknowledgements">Acknowledgements</h2>
 
-<p>??? credit where it is due.  For example, please consider
+<p style="color: red;">??? credit where it is due.  For example, please consider
 acknowledging people on the SRFI mailing list who have contributed to
 the discussion.</p>
 
