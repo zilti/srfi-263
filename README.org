@@ -7,7 +7,7 @@
 
 
 
-keywords: [[https://srfi.schemers.org/?keywords=miscellaneous][Miscellaneous]]
+keywords: [[https://srfi.schemers.org/?keywords=object-oriented][Object-Oriented Programming]]
 
 This repository hosts [[https://srfi.schemers.org/srfi-263/][SRFI 263]]: Prototype Object System, a [[https://srfi.schemers.org/][Scheme Request for Implementation]].
 
