@@ -160,13 +160,13 @@ SPDX-License-Identifier: MIT
     <p>This is syntactic sugar for the often-used idiom to define a method slot by sending an <code>add-method-slot!</code> message with a message name and a lambda form with <code>self</code>, <code>resend</code>, and <code>args</code> formals, and a <code>body</code>. This shortens the following code:</p>
 
     <p><code>(obj 'add-method-slot!
-        'average
+        `average
         (lambda (self resend a b)
         (/ (+ a b) 2)))</code></p>
 
     <p>to this:</p>
 
-    <p><code>(define-method (obj 'average self resend a b)
+    <p><code>(define-method (obj average self resend a b)
         (/ (+ a b) 2))</code></p>
 
     <h4 id="spec-sugar-define-object"><code>define-object name (parent other-parents ...) slots ...</code> - <i>syntax</i></h4>
@@ -180,8 +180,8 @@ SPDX-License-Identifier: MIT
     <p>This allows for shortening the following example:</p>
 
     <p><code>(define o (*the-root-object* 'clone))
-        (o 'add-value-slot! 'constant 'set-constant! 5)
-        (o 'add-method-slot! 'add
+        (o 'add-value-slot! `constant `set-constant! 5)
+        (o 'add-method-slot! `add
           (lambda (self resend summand)
             (+ summand (self 'constant)))))
     </code></p>
