@@ -133,9 +133,17 @@ SPDX-License-Identifier: MIT
 
     <p>A predicate message that returns <code>#t</code> if <i>object</i> is an ancestor of the mirrored object, and <code>#f</code> if not.</p>
 
+    <h5 id="spec-mirror-immediate-ancestor-list"><code>immediate-ancestor-list</code> - <i>message</i></h5>
+
+    <p>This message returns a raw list of all direct ancestors of the mirrored object.</p>
+
+    <h5 id="spec-mirror-full-ancestor-list"><code>full-ancestor-list</code> - <i>message</i></h5>
+
+    <p>This message returns a raw list of all direct and indirect ancestors - all the way up to the root object - of the mirrored object.</p>
+
     <h5 id="spec-mirror-immediate-slot-list"><code>immediate-slot-list</code> - <i>message</i></h5>
 
-    <p>This message returns a list of slots in the receiving object. The elements of the list are lists with three elements each:</p>
+    <p>This message returns a list of slots in the mirrored object. The elements of the list are lists with three elements each:</p>
 
     <ul>
       <li>getter-name</li>
@@ -145,7 +153,7 @@ SPDX-License-Identifier: MIT
 
     <h5 id="spec-mirror-full-slot-list"><code>full-slot-list</code> - <i>message</i></h5>
 
-    <p>This message returns a list of slots in the receiving object and all its ancestors. The elements of the list are lists with three elements each:</p>
+    <p>This message returns a list of slots in the mirrored object and all its ancestors. The elements of the list are lists with three elements each:</p>
 
     <ul>
       <li>getter-name</li>

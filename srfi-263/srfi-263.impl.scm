@@ -14,6 +14,7 @@
     (alist-cons name value alist))))
 
 ;;; Core system
+
 (define (delete-slot! message-alist slot-alist parent-list slot)
   (let ((msgs-no-getter (alist-delete! slot message-alist))
         (setter (cond ((assq slot slot-alist)
@@ -51,11 +52,6 @@
      (if (eq? type 'parent)                             ; parent-list
          (lset-adjoin eq? parent-list value) parent-list))))
 
-(define (direct-slot-lookup self name message-alist)
-  (let ((slot-alist ((self 'mirror) 'immediate-message-alist)))
-    (cond ((assq name slot-alist) => cdr)
-          (else #f))))
-
 (define (recursive-method-lookup self name message-alist)
   (cond
    ((assq name message-alist)
@@ -68,19 +64,24 @@
                  (receiver #f)
                  (handler #f)
                  (found #f))
-        (if (null? parents)
-            (if handler
-                (if (= 1 handler-count)
-                    (values receiver handler found)
-                    (values #f 'ambiguous-message-send #f))
-                (values #f 'message-not-understood #f))
+        (cond
+         ((not (null? parents))
+          (let* ((parent (car parents))
+                 (parent-mirror (parent 'mirror))
+                 (parent-message-alist (parent-mirror 'immediate-message-alist)))
             (let-values (((new-receiver new-handler new-found)
-                          (recursive-method-lookup (car parents) name)))
+                          (recursive-method-lookup parent name parent-message-alist)))
               (loop (cdr parents)
                     (if new-found (add1 handler-count) handler-count)
                     (if new-found new-receiver receiver)
                     (if new-found new-handler handler)
-                    (or new-found found)))))))))
+                    (or new-found found)))))
+         (else
+          (if handler
+              (if (= 1 handler-count)
+                  (values receiver handler found)
+                  (values #f 'ambiguous-message-send #f))
+              (values #f 'message-not-understood #f)))))))))
 
 (define (recursive-ancestor-collector self)
   (let ((parents ((self 'mirror) 'immediate-ancestor-list)))
@@ -91,10 +92,6 @@
                (list self)
                parents
                (map recursive-ancestor-collector parents)))))
-
-(define (make-resender-template self parent-list)
-  (lambda (#!optional args)
-    #f))
 
 (define (mirrorbox instance message-alist slot-alist parent-list)
   (letrec
@@ -116,10 +113,8 @@
           (letrec
               ((obj-handler
                 (lambda (command . args)
-                  (let-values (((receiver method found?)
-                                (recursive-method-lookup
-                                 obj-handler command message-alist)))
-                    (apply method obj-handler #f args))))
+                  (send-with-error-handling
+                   obj-handler obj-handler message-alist command args)))
                (add-*-slot!
                 (lambda (type)
                   (lambda (self resend name . args)
@@ -130,6 +125,7 @@
                       (set! message-alist new-msgs)
                       (set! slot-alist new-slots)
                       (set! parent-list new-parents))))))
+            ;; TODO: Also add those messages to the slot-alist
             (set! message-alist
               `((mirror .
                         ,(lambda (self resend)
@@ -151,29 +147,28 @@
 
 ;;;; Method running
 
-;; (define (wrap-handler handler handler-name self args handler-messages)
-;;   (lambda ()
-;;     (apply handler
-;;            self
-;;            (make-resender handler handler-name self handler-messages)
-;;            args)))
+(define (send-with-error-handling self target message-alist method-name args)
+  (let-values (((receiver method found?)
+                (recursive-method-lookup
+                 target
+                 method-name
+                 (if (list? message-alist)
+                     message-alist
+                     ((target 'mirror) 'immediate-message-alist)))))
+    (if found?
+        (apply method self (make-resender self target method-name) args)
+        (case receiver
+          ((message-not-understood)
+           (error "Message not understood" self target args))
+          ((ambiguous-message-send)
+           (error "Ambiguous message send" self target args))))))
 
-;; (define (make-resender handler-name handler-messages)
-;;   (lambda (self . args)
-;;     (messages-handle handler-messages self handler-name args)))
-
-;; (define (run-with-error-checking handler self name args)
-;;   (case handler
-;;     ((message-not-understood)
-;;      (if (eq? name 'message-not-understood)
-;;          (error "Message MESSAGE-NOT-UNDERSTOOD not understood"
-;;                 self args)
-;;          (self 'message-not-understood name args)))
-;;     ((ambiguous-message-send)
-;;      (if (eq? name 'ambiguous-message-send)
-;;          (error "Message AMBIGUOUS-MESSAGE-SEND is ambiguous"
-;;                 self args)
-;;          (self 'ambiguous-message-send name args)))
-;;     (else (handler))))
-
-;;;; Core object system
+(define (make-resender self target handler-name)
+  (lambda (target-override . args)
+    (let* ((target (cond
+                    ((eq? #f target-override)
+                     target)
+                    ((symbol? target-override)
+                     (target target-override))
+                    (else target-override))))
+      (send-with-error-handling self target '() handler-name args))))

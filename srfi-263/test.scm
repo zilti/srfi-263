@@ -4,7 +4,6 @@
   (lambda () 'success))
 
 (assert (null? ((*the-root-object* 'mirror) 'immediate-ancestor-list)))
-
 (assert (= 6 (length ((*the-root-object* 'mirror) 'immediate-message-alist))))
 
 (let ((cloneroot (*the-root-object* 'clone)))
