@@ -125,7 +125,6 @@
                       (set! message-alist new-msgs)
                       (set! slot-alist new-slots)
                       (set! parent-list new-parents))))))
-            ;; TODO: Also add those messages to the slot-alist
             (set! message-alist
               `((mirror .
                         ,(lambda (self resend)
@@ -142,6 +141,12 @@
                 (add-value-slot! . ,(add-*-slot! 'value))
                 (add-method-slot! . ,(add-*-slot! 'method))
                 (add-parent-slot! . ,(add-*-slot! 'parent))))
+            (set! slot-alist
+              (append (list
+                       (assq 'mirror message-alist)
+                       (assq 'clone message-alist)
+                       (assq 'delete-slot! message-alist))
+                      slot-alist))
             obj-handler))))
     (object '() '() '())))
 
