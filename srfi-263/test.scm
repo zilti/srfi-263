@@ -10,7 +10,7 @@
   (cloneroot 'add-value-slot! 'myval 5)
   (assert (= 5 (cloneroot 'myval)))
   (assert (= 6 (length ((*the-root-object* 'mirror) 'immediate-message-alist))))
-  (assert (= 7 (length ((cloneroot 'mirror) 'immediate-message-alist))))
+  (assert (= 8 (length ((cloneroot 'mirror) 'immediate-message-alist))))
   )
 
 (let* ((cloneroot (*the-root-object* 'clone))

@@ -125,28 +125,26 @@
                       (set! message-alist new-msgs)
                       (set! slot-alist new-slots)
                       (set! parent-list new-parents))))))
-            (set! message-alist
-              `((mirror .
-                        ,(lambda (self resend)
-                           (mirrorbox self message-alist slot-alist parent-list)))
-                (clone .
-                       ,(lambda (self resend)
-                          (let-values
-                              (((message-alist slot-alist parent-list)
-                                (add-slot! 'parent '() '() '() 'parent self)))
-                            (object message-alist slot-alist parent-list))))
-                (delete-slot! .
-                              ,(lambda (self resend name)
-                                 (delete-slot! message-alist slot-alist parent-list name)))
-                (add-value-slot! . ,(add-*-slot! 'value))
-                (add-method-slot! . ,(add-*-slot! 'method))
-                (add-parent-slot! . ,(add-*-slot! 'parent))))
-            (set! slot-alist
-              (append (list
-                       (assq 'mirror message-alist)
-                       (assq 'clone message-alist)
-                       (assq 'delete-slot! message-alist))
-                      slot-alist))
+            ((add-*-slot! 'method)
+             #f #f 'mirror (lambda (self resend)
+                             (mirrorbox self message-alist slot-alist parent-list)))
+            ((add-*-slot! 'method)
+             #f #f 'clone (lambda (self resend)
+                            (let-values
+                                (((message-alist slot-alist parent-list)
+                                  (add-slot! 'parent '() '() '() 'parent self)))
+                              (object message-alist slot-alist parent-list))))
+            ((add-*-slot! 'method)
+             #f #f 'delete-slot! (lambda (self resend name)
+                                   (let-values
+                                       (((new-msgs new-slots new-parents)
+                                         (delete-slot! message-alist slot-alist parent-list name)))
+                                     (set! message-alist new-msgs)
+                                     (set! slot-alist new-slots)
+                                     (set! parent-list new-parents))))
+            ((add-*-slot! 'method) #f #f 'add-value-slot! (add-*-slot! 'value))
+            ((add-*-slot! 'method) #f #f 'add-method-slot! (add-*-slot! 'method))
+            ((add-*-slot! 'method) #f #f 'add-parent-slot! (add-*-slot! 'parent))
             obj-handler))))
     (object '() '() '())))
 
