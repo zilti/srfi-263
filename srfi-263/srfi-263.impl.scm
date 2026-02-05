@@ -160,7 +160,7 @@
                      ((target 'mirror) 'immediate-message-alist)))))
     (if found?
         (apply method self (make-resender self target method-name) args)
-        (case receiver
+        (case method
           ((message-not-understood)
            (error "Message not understood" self target args))
           ((ambiguous-message-send)
