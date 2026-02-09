@@ -42,17 +42,32 @@
     (lambda (cont)
       (with-exception-handler
           (lambda (exc) (cont #t))
-        (lambda () (adderclass 'sub1 10))))
+        (lambda () (adderclass 'sub1 10)
+           (cont #f))))
     ))
 
-  (adderclass 'add-method-slot! 'reset (lambda (x) 5))
-  (squareclass 'add-method-slot! 'reset (lambda (x) 5))
+  (adderclass 'add-method-slot! 'reset (lambda (self resend x) 5))
+  (squareclass 'add-method-slot! 'reset (lambda (self resend x) 5))
 
   (assert
    (call-with-current-continuation
     (lambda (cont)
       (with-exception-handler
           (lambda (exc) (cont #t))
-        (lambda () (mathclass 'reset 1))))))
+        (lambda () (mathclass 'reset 1)
+           (cont #f))))))
   )
 
+;;; Value slots
+
+;; (let ((firstlevel (*the-root-object* 'clone)))
+;;   (firstlevel 'add-value-slot! 'number 'set-number! 0)
+;;   (firstlevel 'add-method-slot! 'mod-value (lambda (self resend)
+;;                                              (self 'set-number! 5)))
+;;   (let ((secondlevel (firstlevel 'clone)))
+;;     (secondlevel 'add-method-slot! 'mod-value (lambda (self resend)
+;;                                                 (display "Calling resend...\n")
+;;                                                 (resend #f)
+;;                                                 (display "Called resend.\n")))
+;;     (display "Testing resend\n")
+;;     (secondlevel 'mod-value)))
