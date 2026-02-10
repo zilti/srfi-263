@@ -30,27 +30,33 @@
      (lset-xor eq? parent-list (list value)))))
 
 ;;; Setters aren't created properly. They should show up as a message.
-(define (add-slot! type message-alist slot-alist parent-list slot . args)
-  (let* ((setter? (> 1 (length args)))
+(define (add-slot! type message-alist slot-alist value-store-alist parent-list slot . args)
+  (let* ((setter? (< 1 (length args)))
          (setter-name (and setter? (car args)))
          (value (if setter? (cadr args) (car args)))
          (getter (if (eq? type 'method)
                      value
                      (lambda (self resend)   ; wrap the value in value slots 
-                       value)))         ; for more streamlined access
-         (setter (lambda (new-value)
+                       (let-values
+                           (((val found?) ; for more streamlined access
+                             (recursive-method-lookup self (slot-value-finder slot)
+                                                      #f)))
+                         val))))
+         (setter (lambda (self resend new-value)
                    (when (eq? type 'parent)
                      (set! parent-list
                        (lset-adjoin eq?
                                     (lset-xor eq? parent-list (list value))
                                     new-value)))
-                   (set! value new-value)))
+                   (self '--set-value-store slot new-value)))
          (msgs-with-getter (alist-set! message-alist slot getter))
          (msgs-with-setter (alist-set! msgs-with-getter setter-name setter)))
     (values                                         ; returning...
      (if setter? msgs-with-setter msgs-with-getter) ; message-alist
      (alist-set! slot-alist slot                    ; slot-alist
                  (list slot setter-name type value))
+     (if (eq? type 'value) (alist-set! value-store-alist slot value)
+         value-store-alist)             ; value-store-alist
      (if (eq? type 'parent)             ; parent-list
          (lset-adjoin eq? parent-list value) parent-list))))
 
@@ -60,11 +66,15 @@
         (assq name message-alist)
         (assq name ((self 'mirror) 'immediate-message-alist)))))
 
+(define (slot-value-finder name)
+  (lambda (self)
+    (assq name ((self 'mirror) 'value-store-alist))))
+
 (define (recursive-method-lookup self checker skip?)
   (cond
    ((and (not skip?) (checker self))
-    => (lambda (messages-entry)
-         (values (cdr messages-entry) #t)))
+    => (lambda (alist-entry)
+         (values (cdr alist-entry) #t)))
    (else
     (let ((mirror (self 'mirror)))
       (let loop ((parents (mirror 'immediate-ancestor-list))
@@ -103,17 +113,21 @@
           (letrec
               ((obj-handler
                 (lambda (command . args)
-                  (send-with-error-handling
-                   obj-handler command message-alist #f args)))
+                  (if (eqv? command '--set-value-store)
+                      (set! value-store-alist
+                        (alist-set! value-store-alist (car args) (cadr args)))
+                      (send-with-error-handling
+                       obj-handler command message-alist #f args))))
                (add-*-slot!
                 (lambda (type)
                   (lambda (self resend name . args)
                     (let-values
-                        (((new-msgs new-slots new-parents)
+                        (((new-msgs new-slots new-value-store-alist new-parents)
                           (apply add-slot! type
-                                 message-alist slot-alist parent-list name args)))
+                                 message-alist slot-alist value-store-alist parent-list name args)))
                       (set! message-alist new-msgs)
                       (set! slot-alist new-slots)
+                      (set! value-store-alist new-value-store-alist)
                       (set! parent-list new-parents))))))
             ((add-*-slot! 'method)
              #f #f 'mirror (lambda (self resend)
@@ -129,9 +143,9 @@
             ((add-*-slot! 'method)
              #f #f 'clone (lambda (self resend)
                             (let-values
-                                (((message-alist slot-alist parent-list)
-                                  (add-slot! 'parent '() '() '() 'parent self)))
-                              (object message-alist slot-alist '() parent-list))))
+                                (((message-alist slot-alist value-store-alist parent-list)
+                                  (add-slot! 'parent '() '() '() '() 'parent self)))
+                              (object message-alist slot-alist value-store-alist parent-list))))
             ((add-*-slot! 'method)
              #f #f 'delete-slot! (lambda (self resend name)
                                    (let-values
