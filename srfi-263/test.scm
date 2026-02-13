@@ -13,6 +13,7 @@
   (assert (= 8 (length ((cloneroot 'mirror) 'immediate-message-alist))))
   )
 
+
 (let* ((cloneroot (*the-root-object* 'clone))
        (clonecloneroot (cloneroot 'clone)))
   (assert (eq? '()
@@ -64,9 +65,11 @@
   (firstlevel 'add-value-slot! 'number 'set-number! 0)
   (firstlevel 'add-method-slot! 'mod-value (lambda (self resend)
                                              (self 'set-number! 50)))
-  (let ((secondlevel (firstlevel 'clone)))
+  (let* ((secondlevel (firstlevel 'clone))
+         (thirdlevel (secondlevel 'clone)))
     (secondlevel 'add-method-slot! 'mod-value (lambda (self resend)
                                                 (resend #f)))
     (secondlevel 'mod-value)
     (assert (= 0 (firstlevel 'number)))
-    (assert (= 50 (secondlevel 'number)))))
+    (assert (= 50 (secondlevel 'number)))
+    (assert (= 50 (thirdlevel 'number)))))
