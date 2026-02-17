@@ -1,26 +1,46 @@
 (include "srfi-263.impl.scm")
 
 (define testmethod
-  (lambda () 'success))
+  (lambda (self resend) 'success))
+
+;;; Basic Functionality
 
 (assert (null? ((*the-root-object* 'mirror) 'immediate-ancestor-list)))
 (assert (= 6 (length ((*the-root-object* 'mirror) 'immediate-message-alist))))
 
-(let ((cloneroot (*the-root-object* 'clone)))
-  (cloneroot 'add-value-slot! 'myval 5)
-  (assert (= 5 (cloneroot 'myval)))
-  (assert (= 6 (length ((*the-root-object* 'mirror) 'immediate-message-alist))))
-  (assert (= 8 (length ((cloneroot 'mirror) 'immediate-message-alist))))
+(let ((class (*the-root-object* 'clone)))
+  (assert (eq? *the-root-object* (car ((class 'mirror) 'immediate-ancestor-list))))
+
+  (class 'add-method-slot! 'testmethod testmethod)
+  (assert (eq? 'success (class 'testmethod)))
+
+  (class 'add-value-slot! 'val 'set-val! 10)
+  (assert (eq? 10 (class 'val)))
+  (class 'set-val! 20)
+  (assert (eq? 20 (class 'val)))
+  (assert (= 10 (length ((class 'mirror) 'immediate-message-alist))))
+  (class 'add-value-slot! 'val 40)
+  (assert (eq? 40 (class 'val)))
+  (assert (= 9 (length ((class 'mirror) 'immediate-message-alist))))
   )
 
+;;; Inheritance
 
-(let* ((cloneroot (*the-root-object* 'clone))
-       (clonecloneroot (cloneroot 'clone)))
-  (assert (eq? '()
-               (lset-difference eq?
-                                (list *the-root-object* cloneroot clonecloneroot)
-                                ((clonecloneroot 'mirror) 'full-ancestor-list)))))
+(let* ((firstlevel (*the-root-object* 'clone))
+       (secondlevel (firstlevel 'clone)))
+  (firstlevel 'add-method-slot! 'testmethod testmethod)
+  (assert (eq? 'success (secondlevel 'testmethod)))
+  (firstlevel 'add-value-slot! 'val 'set-val! 10)
+  (assert (eq? 10 (secondlevel 'val)))
+  (secondlevel 'set-val! 20)
+  (assert (eq? 10 (firstlevel 'val)))
+  (assert (eq? 20 (secondlevel 'val)))
+  (firstlevel 'add-value-slot! 'val #f 30)
+  (assert (eq? 30 (firstlevel 'val)))
+  (assert (eq? 20 (secondlevel 'val)))
 
+  (assert (= 1 (length ((firstlevel 'mirror) 'full-ancestor-list))))
+  (assert (= 2 (length ((secondlevel 'mirror) 'full-ancestor-list)))))
 
 ;;; Multiple Inheritance
 
@@ -58,18 +78,3 @@
         (lambda () (mathclass 'reset 1)
            (cont #f))))))
   )
-
-;;; Value slots
-
-(let ((firstlevel (*the-root-object* 'clone)))
-  (firstlevel 'add-value-slot! 'number 'set-number! 0)
-  (firstlevel 'add-method-slot! 'mod-value (lambda (self resend)
-                                             (self 'set-number! 50)))
-  (let* ((secondlevel (firstlevel 'clone))
-         (thirdlevel (secondlevel 'clone)))
-    (secondlevel 'add-method-slot! 'mod-value (lambda (self resend)
-                                                (resend #f)))
-    (secondlevel 'mod-value)
-    (assert (= 0 (firstlevel 'number)))
-    (assert (= 50 (secondlevel 'number)))
-    (assert (= 50 (thirdlevel 'number)))))
