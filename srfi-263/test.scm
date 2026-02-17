@@ -1,4 +1,5 @@
-(include "srfi-263.impl.scm")
+(include "srfi-263.scm")
+(import (srfi 263))
 
 (define testmethod
   (lambda (self resend) 'success))
@@ -78,3 +79,6 @@
         (lambda () (mathclass 'reset 1)
            (cont #f))))))
   )
+
+;;; Syntax
+(include "srfi-263-syntax.impl.scm")

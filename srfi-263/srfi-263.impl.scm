@@ -1,5 +1,6 @@
 (import (scheme base)
         (scheme case-lambda)
+        (scheme cxr)
         (srfi 1))
 
 ;;; Helpers
@@ -92,7 +93,7 @@
           (let-values (((new-handler new-found)
                         (recursive-lookup (car parents) checker #f)))
             (loop (cdr parents)
-                  (if new-found (add1 handler-count) handler-count)
+                  (if new-found (+ handler-count 1) handler-count)
                   (if new-found new-handler handler)
                   (or new-found found))))
          (else
