@@ -1,6 +1,7 @@
 (import (scheme base)
         (scheme case-lambda)
         (scheme cxr)
+        (scheme write)
         (srfi 1))
 
 ;;; Helpers
@@ -16,58 +17,58 @@
 
 ;;; Core system
 
-(define (delete-slot! message-alist slot-list parent-list slot)
-  (let* ((slot-predicate (lambda (item)
+(define (delete-slot! obj-data slot)
+  (let* ((message-alist (get-message-alist obj-data))
+         (slot-list (get-slot-list obj-data))
+         (parent-list (get-parent-list obj-data))
+         (slot-predicate (lambda (item)
                            (or (eq? (car item) slot)
                               (eq? (cadr item) slot))))
          (slots (filter slot-predicate slot-list)))
     (if (= 1 (length slots))
         (let ((slot (car slots)))
-          (values
-           (alist-delete (car slot) (alist-delete (cadr slot) message-alist))
-           (remove slot-predicate slot-list)
-           (if (eq? 'parent (caddr slot))
-               (delete (car slot) parent-list)
-               parent-list)))
-        (values message-alist slot-list parent-list))))
+          (set-message-alist! obj-data
+                              (alist-delete (car slot)
+                                            (alist-delete (cadr slot) message-alist)))
+          (set-slot-list! obj-data (remove slot-predicate slot-list))
+          (if (eq? 'parent (caddr slot))
+              (set-parent-list! (delete (car slot) parent-list)))))))
 
-(define (add-value-slot! message-alist slot-list slot . args)
-  (let-values (((message-alist slot-list _)
-                (delete-slot! message-alist slot-list '() slot)))
-    (let* ((setter? (< 1 (length args)))
-           (setter-name (and setter? (car args)))
-           (value (if setter? (cadr args) (car args)))
-           (getter (lambda (self resend)
-                     value))
-           (setter (lambda (self resend . args)
-                     (apply self 'add-value-slot! slot
-                            (if setter? (cons setter-name args)
-                                args))))
-           (message-alist (append (if setter?
-                                      `((,slot . ,getter)
-                                        (,setter-name . ,setter))
-                                      `((,slot . ,getter)))
-                                  message-alist))
-           (slot-list (append `((,slot ,setter-name value))
-                              slot-list)))
-      (values
-       message-alist slot-list))))
+(define (add-value-slot! obj-data slot . args)
+  (delete-slot! obj-data slot)
+  (let* ((setter? (< 1 (length args)))
+         (setter-name (and setter? (car args)))
+         (value (if setter? (cadr args) (car args)))
+         (getter (lambda (self resend)
+                   value))
+         (setter (lambda (self resend . args)
+                   (apply self 'add-value-slot! slot
+                          (if setter? (cons setter-name args)
+                              args)))))
+    (set-message-alist! obj-data
+                        (append (if setter?
+                                    `((,slot . ,getter)
+                                      (,setter-name . ,setter))
+                                    `((,slot . ,getter)))
+                                (get-message-alist obj-data)))
+    (set-slot-list! obj-data
+                    (append `((,slot ,setter-name value))
+                            (get-slot-list obj-data)))))
 
-(define (add-method-slot! message-alist slot-list slot proc)
-  (let-values (((message-alist slot-list _)
-                (delete-slot! message-alist slot-list '() slot)))
-    (values
-     (alist-set message-alist slot proc)
-     (cons `(,slot #f method) slot-list))))
+(define (add-method-slot! obj-data slot proc)
+  (delete-slot! obj-data slot)
+  (set-message-alist! obj-data
+                      (alist-set (get-message-alist obj-data)
+                                 slot proc))
+  (set-slot-list! obj-data
+                  (cons `(,slot #f method)
+                        (get-slot-list obj-data))))
 
-(define (add-parent-slot! message-alist slot-list parent-list slot parent)
-  (let-values (((message-alist slot-list parent-list)
-                (delete-slot! message-alist slot-list parent-list slot)))
-    (let ((parent-slot `((,slot #f parent))))
-      (values
-       (alist-set message-alist slot parent)
-       (append parent-slot slot-list)
-       (cons parent parent-list)))))
+(define (add-parent-slot! obj-data slot parent)
+  (delete-slot! obj-data slot)
+  (set-message-alist! obj-data (alist-set (get-message-alist obj-data) slot parent))
+  (set-slot-list! obj-data (append `((,slot #f parent)) (get-slot-list obj-data)))
+  (set-parent-list! obj-data (cons parent (get-parent-list obj-data))))
 
 (define (method-finder name message-alist)
   (lambda (self)
@@ -142,77 +143,80 @@
 
 ;;;; Mirror
 
-(define (mirror self message-alist slot-list parent-list)
+(define (mirror self obj-data)
   (lambda (message . args)
     (case message
-      ((immediate-message-alist) message-alist)
-      ((immediate-ancestor-list) parent-list)
+      ((--object-data) obj-data)
+      ((immediate-message-alist) (get-message-alist obj-data))
+      ((immediate-ancestor-list) (get-parent-list obj-data))
       ((full-ancestor-list) (recursive-ancestor-collector self))
-      ((immediate-slot-list) slot-list)
+      ((immediate-slot-list) (get-slot-list obj-data))
       ((full-slot-list) (recursive-slot-collector self))
       (else
        (error "Message not understood" message)))))
 
 ;;;; Root object
 
-(define *the-root-object*
+(define-record-type object-data
+  (make-object-data* message-alist slot-list parent-list)
+  object-data?
+  (message-alist get-message-alist set-message-alist!)
+  (slot-list get-slot-list set-slot-list!)
+  (parent-list get-parent-list set-parent-list!))
+
+(define (make-object-data)
+  (make-object-data* '() '() '()))
+
+(define *maybe-the-root-object*
+  (let ((data (make-object-data)))
+    #f))
+
+(define (*object* obj-data)
   (letrec
-      ((object
-        (lambda (message-alist slot-list parent-list)
-          (letrec
-              ((obj-handler
-                (lambda (message . args)
-                  (if (eq? message 'mirror)
-                      (mirror obj-handler message-alist slot-list parent-list)
-                      (send-with-error-handling
-                       obj-handler obj-handler message message-alist #f args)))))
-            (set! message-alist
-              (alist-cons
-               'add-method-slot!
-               (lambda (self resend name proc)
-                 (let-values
-                     (((new-message-alist new-slot-list)
-                       (add-method-slot! message-alist slot-list name proc)))
-                   (set! message-alist new-message-alist)
-                   (set! slot-list new-slot-list)))
-               message-alist))
-            (set! slot-list (append `((add-method-slot! #f method)) slot-list))
-            (obj-handler 'add-method-slot! 'mirror
-                         (lambda (self resend)
-                           (mirror self message-alist slot-list parent-list)))
-            (obj-handler 'add-method-slot! 'clone
-                         (lambda (self resend)
-                           (let-values
-                               (((message-alist slot-list parent-list)
-                                 (add-parent-slot! '() '() '() 'parent self)))
-                             (object message-alist slot-list parent-list))))
-            (obj-handler 'add-method-slot! 'delete-slot!
-                         (lambda (self resend name)
-                           (let-values
-                               (((new-message-alist new-slot-list new-parent-list)
-                                 (delete-slot! message-alist slot-list parent-list name)))
-                             (set! message-alist new-message-alist)
-                             (set! slot-list new-slot-list)
-                             (set! parent-list new-parent-list))))
-            (obj-handler 'add-method-slot! 'add-value-slot!
-                         (lambda (self resend name . args)
-                           (let-values (((new-message-alist new-slot-list)
-                                         (apply add-value-slot! message-alist slot-list name args)))
-                             (set! message-alist new-message-alist)
-                             (set! slot-list new-slot-list))))
-            (obj-handler 'add-method-slot! 'add-parent-slot!
-                         (lambda (self resend name parent)
-                           (let-values (((new-message-alist new-slot-list new-parent-list)
-                                         (add-parent-slot! message-alist slot-list parent-list name parent)))
-                             (set! message-alist new-message-alist)
-                             (set! slot-list new-slot-list)
-                             (set! parent-list new-parent-list))))
-            obj-handler))))
-    (let ((root-object (object '() '() '())))
-      (root-object 'add-method-slot! 'message-not-understood
-                   (lambda (self resend message args)
-                     (error "Message not understood" self message args)))
-      (root-object 'add-method-slot! 'ambiguous-message-send
-                   (lambda (self resend message args)
-                     (error "Message ambiguous" self message args)))
-      root-object)))
+      ((obj-handler
+        (lambda (message . args)
+          (if (eq? message 'mirror)
+              (mirror obj-handler obj-data)
+              (send-with-error-handling
+               obj-handler obj-handler message (get-message-alist obj-data) #f args)))))
+    obj-handler))
+
+(define *the-root-object*
+  (let* ((object (*object* (make-object-data)))
+         (mirror (object 'mirror))
+         (obj-data (mirror '--object-data)))
+    (set-message-alist!
+     obj-data
+     (alist-cons
+      'add-method-slot!
+      (lambda (self resend name proc)
+        (add-method-slot! ((self 'mirror) '--object-data) name proc))
+      (get-message-alist obj-data)))
+    (set-slot-list!
+     obj-data
+     (append `((add-method-slot! #f method)) (get-slot-list obj-data)))
+    (object 'add-method-slot! 'mirror
+            (lambda (self resend)
+              (mirror self obj-data)))
+    (object 'add-method-slot! 'clone
+            (lambda (self resend)
+              (let ((cloned-object (*object* (make-object-data))))
+                (add-parent-slot! ((cloned-object 'mirror) '--object-data)
+                                  'parent self)
+                cloned-object)))
+    (object 'add-method-slot! 'delete-slot!
+            (lambda (self resend name)
+              (delete-slot! ((self 'mirror) '--object-data) name)))
+    (object 'add-method-slot! 'add-value-slot!
+            (lambda (self resend name . args)
+              (apply add-value-slot! ((self 'mirror) '--object-data) name args)))
+    (object 'add-method-slot! 'add-parent-slot!
+            (lambda (self resend name parent)
+              (add-parent-slot! ((self 'mirror) '--object-data) name parent)))
+    (object 'add-method-slot! 'message-not-understood
+            (lambda (self resend message args)
+              (error "Message not understood" self message args)))
+    (object 'add-method-slot! 'ambiguous-message-send
+            (lambda (self resend message args)
+              (error "Message ambiguous" self message args)))
+    object))

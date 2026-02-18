@@ -19,10 +19,10 @@
   (assert (eq? 10 (class 'val)))
   (class 'set-val! 20)
   (assert (eq? 20 (class 'val)))
-  (assert (= 10 (length ((class 'mirror) 'immediate-message-alist))))
+  (assert (= 4 (length ((class 'mirror) 'immediate-message-alist))))
   (class 'add-value-slot! 'val 40)
   (assert (eq? 40 (class 'val)))
-  (assert (= 9 (length ((class 'mirror) 'immediate-message-alist))))
+  (assert (= 3 (length ((class 'mirror) 'immediate-message-alist))))
   )
 
 ;;; Inheritance
@@ -43,7 +43,7 @@
   (assert (= 1 (length ((firstlevel 'mirror) 'full-ancestor-list))))
   (assert (= 2 (length ((secondlevel 'mirror) 'full-ancestor-list)))))
 
-;;; Multiple Inheritance
+;; ;;; Multiple Inheritance
 
 (let* ((adderclass (*the-root-object* 'clone))
        (squareclass (*the-root-object* 'clone))
