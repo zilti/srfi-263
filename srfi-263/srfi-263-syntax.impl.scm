@@ -3,8 +3,8 @@
 
 (define-syntax define-method
   (syntax-rules ()
-    ((_ (obj `message self resend args ...)
-        body1 body)
+    ((_ (obj message self resend args ...)
+        body1 body ...)
      (obj 'add-method-slot! `message
           (lambda (self resend args ...)
             body1 body ...)))))

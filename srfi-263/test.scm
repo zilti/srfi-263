@@ -7,7 +7,7 @@
 ;;; Basic Functionality
 
 (assert (null? ((*the-root-object* 'mirror) 'immediate-ancestor-list)))
-(assert (= 6 (length ((*the-root-object* 'mirror) 'immediate-message-alist))))
+(assert (= 8 (length ((*the-root-object* 'mirror) 'immediate-message-alist))))
 
 (let ((class (*the-root-object* 'clone)))
   (assert (eq? *the-root-object* (car ((class 'mirror) 'immediate-ancestor-list))))
@@ -82,3 +82,18 @@
 
 ;;; Syntax
 (include "srfi-263-syntax.impl.scm")
+
+(define-object testobject (*the-root-object*)
+  (testmethod (self resend) 'success)
+  (val 10)
+  (testval set-testval! 50))
+
+(assert (eq? 'success (testobject 'testmethod)))
+(assert (eq? 10 (testobject 'val)))
+(assert (eq? 50 (testobject 'testval)))
+(testobject 'set-testval! 20)
+(assert (eq? 20 (testobject 'testval)))
+
+(define-method (testobject methodslot self resend a b)
+  (+ a b))
+(assert (eq? 50 (testobject 'methodslot 20 30)))

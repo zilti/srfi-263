@@ -71,7 +71,7 @@
 
 (define (method-finder name message-alist)
   (lambda (self)
-    (cond ((if (eqv? name 'mirror)
+    (cond ((if (eq? name 'mirror)
                 (assq name message-alist)
                 (assq name ((self 'mirror) 'immediate-message-alist)))
            => cdr)
@@ -130,18 +130,12 @@
                  method-lookup
                  (method-finder method-name message-alist)
                  parents-only)))
-    (if found?
-        (apply method caller (make-resender caller method-name) args)
-        (case method
-          ((message-not-understood)
-           (error "Message not understood" caller args))
-          ((ambiguous-message-send)
-           (error "Ambiguous message send" caller args))))))
+    (apply method caller (make-resender caller method-name) args)))
 
 (define (make-resender caller handler-name)
   (lambda (target-override . args)
     (let ((target (cond
-                   ((eqv? #f target-override)
+                   ((eq? #f target-override)
                     caller)
                    (else target-override))))
       (send-with-error-handling caller target handler-name '() (eq? target-override #f) args))))
@@ -214,4 +208,11 @@
                              (set! slot-list new-slot-list)
                              (set! parent-list new-parent-list))))
             obj-handler))))
-    (object '() '() '())))
+    (let ((root-object (object '() '() '())))
+      (root-object 'add-method-slot! 'message-not-understood
+                   (lambda (self resend message args)
+                     (error "Message not understood" self message args)))
+      (root-object 'add-method-slot! 'ambiguous-message-send
+                   (lambda (self resend message args)
+                     (error "Message ambiguous" self message args)))
+      root-object)))
