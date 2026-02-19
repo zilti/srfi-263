@@ -63,7 +63,7 @@ SPDX-License-Identifier: MIT
 
     <p><code>(lambda (self resend a b) (/ (+ a b) 2))</code></p>
 
-    <p>Every slot, regardless of its kind, can be associated with a setter method when it is created. Setter methods receive a single argument, and replace the value of the corresponding slot with this argument. Setter methods can be created automatically when a given slot is created, and are removed when the corresponding getter slot is removed (but not vice versa). Because of this, they are sometimes not considered to be slots, even though they are. See «Setters are Methods» for an example where this distinction is important.</p>
+    <p>Every slot, regardless of its kind, can be associated with a setter method when it is created. Setter methods receive a single argument, and replace the value of the corresponding slot with this argument. Setter methods can be created automatically when a given slot is created, and are removed when the corresponding getter slot is removed (but not vice versa).</p>
 
     <h4 id="spec-objsystem-messages">Messages</h4>
 
@@ -75,9 +75,11 @@ SPDX-License-Identifier: MIT
 
     <p>When a slot for a message is not found in the current object, all its parent slots are queried recursively, i.e. parent objects which don't know the slot query their parents recursively.</p>
 
-    <p>If no parent knows the slot, the original message receiving object is sent a message-not-understood message. If more than one parent knows the slot, the original message receiving object is sent an ambiguous-message-send message. See «Root Objects» for a documentation of those messages. By default, they signal an error.</p>
+    <p>If no parent knows the slot, the original message receiving object is sent a message-not-understood message. If more than one parent knows the slot, the original message receiving object is sent an ambiguous-message-send message. By default, they signal an error. Both are normal slots that can be overridden.</p>
 
-    <p>Method slots can decide not to handle a message, but rather pass it up the inheritance tree for other handlers. For this purpose, they are passed a procedure commonly called <code>resend</code>. See «Slots» for an explanation of method slots.</p>
+    <h5 id="spec-objsystem-resend"><code>resend target-override . args</code> - <i>procedure</i></h5>
+
+    <p>Method slots can decide not to handle a message, but rather pass it up the inheritance tree for other handlers. For this purpose, they are passed a procedure commonly called <code>resend</code>. As the first argument, it takes a <i>target-override</i>, which can simply be <code>#f</code> to traverse the entire ancestoral tree to find a class capable of handling the message, or it can be a specific class, which in that point becomes the starting point for the search. The latter can be useful in multiple inheritance scenarios where an <i>ambiguous-message-send</i> would be triggered otherwise. As further arguments, it takes the arguments of the targeted method.</p>
 
     <p>It is important to understand the difference between sending a message to an object and re-sending it to the object. When a message is just sent to an object, methods will get that object as the <code>self</code> argument. When a message is resent, <code>self</code> instead refers to the object it was originally sent to.</p>
 
@@ -87,7 +89,7 @@ SPDX-License-Identifier: MIT
 
     <h5 id="spec-objsystem-the-root-object"><code>*the-root-object*</code> - <i>class</i></h5>
 
-    <p>This is the default root object. This should be used as the root of the object hierarchy in a program.</p>
+    <p>This is the root object. This should be used as the root of the object hierarchy in a program.</p>
 
     <p>The root object contains a number of slots by default.</p>
 
@@ -117,11 +119,11 @@ SPDX-License-Identifier: MIT
 
     <p>Delete the slot named <code>name</code> from the receiving object. This also removes the setter corresponding to <code>name</code>, if any. Beware that the parents might contain the same slot, so a message send can still succeed even after a slot is deleted.</p>
 
-    <h5 id="spec-objsystem-message-not-understood"><code>message-not-understood message args</code> - <i>message</i></h5>
+    <h5 id="spec-objsystem-message-not-understood"><code>message-not-understood self message args</code> - <i>message</i></h5>
 
     <p>This is received when the message <code>message</code> with the arguments <code>args</code> to the object was not understood. The root object just signals an error.</p>
 
-    <h5 id="spec-objsystem-ambiguous-send"><code>ambiguous-message-send message args</code> - <i>message</i></h5>
+    <h5 id="spec-objsystem-ambiguous-send"><code>ambiguous-message-send self message args</code> - <i>message</i></h5>
 
     <p>This is received when the message <code>message</code> with arguments <code>args</code> to the object would have reached multiple parents. The root object just signals an error.</p>
 

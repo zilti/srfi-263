@@ -23,6 +23,14 @@
   (class 'add-value-slot! 'val 40)
   (assert (eq? 40 (class 'val)))
   (assert (= 3 (length ((class 'mirror) 'immediate-message-alist))))
+  ;; Deleting the setter keeps the getter
+  (class 'add-value-slot! 'val 'set-val! 10)
+  (class 'delete-slot! 'set-val!)
+  (assert (= 3 (length ((class 'mirror) 'immediate-message-alist))))
+  ;; Deleting the getter also deletes the setter
+  (class 'add-value-slot! 'val 'set-val! 10)
+  (class 'delete-slot! 'val)
+  (assert (= 2 (length ((class 'mirror) 'immediate-message-alist))))
   )
 
 ;;; Inheritance
@@ -43,7 +51,7 @@
   (assert (= 1 (length ((firstlevel 'mirror) 'full-ancestor-list))))
   (assert (= 2 (length ((secondlevel 'mirror) 'full-ancestor-list)))))
 
-;; ;;; Multiple Inheritance
+;;;; Multiple Inheritance
 
 (let* ((adderclass (*the-root-object* 'clone))
        (squareclass (*the-root-object* 'clone))
