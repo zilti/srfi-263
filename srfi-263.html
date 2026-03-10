@@ -101,17 +101,17 @@ SPDX-License-Identifier: MIT
 
     <p>Return a mirror object that contains various slots providing reflection information about the receiver.</p>
 
-    <h5 id="spec-objsystem-add-value-slot"><code>add-value-slot! getter [setter] value</code> - <i>message</i></h5>
+    <h5 id="spec-objsystem-add-value-slot"><code>set-value-slot! getter [setter] value</code> - <i>message</i></h5>
 
     <p>Add a new value slot to the recipient. The value of the slot can be retrieved with the getter message. If a setter message is given, that message can be used to change the value of the slot.</p>
 
-    <h5 id="spec-objsystem-add-method-slot"><code>add-method-slot! getter [setter] proc</code> - <i>message</i></h5>
+    <h5 id="spec-objsystem-add-method-slot"><code>set-method-slot! getter [setter] proc</code> - <i>message</i></h5>
 
     <p>Add a method slot to the recipient. The slot procedure can be invoked with the getter message. The procedure will be invoked with a <code>self</code> argument bound to the object that received the message, a <code>resend</code> procedure to resend the message if the method does not want to handle it directly, and all further arguments passed to the message send.</p>
 
     <p>If a setter message is given, it can be used to change the procedure.</p>
 
-    <h5 id="spec-objsystem-add-parent-slot"><code>add-parent-slot! getter [setter] parent</code> - <i>message</i></h5>
+    <h5 id="spec-objsystem-add-parent-slot"><code>set-parent-slot! getter [setter] parent</code> - <i>message</i></h5>
 
     <p>Add a parent slot to the recipient. Parent slots are searched for slots not found directly in the object. The setter message, if given, can be used to later change the value of the parent slot.</p>
 
@@ -167,9 +167,9 @@ SPDX-License-Identifier: MIT
 
     <h4 id="spec-sugar-define-method"><code>define-method (obj message self resend . args) body ...</code> - <i>syntax</i></h4>
 
-    <p>This is syntactic sugar for the often-used idiom to define a method slot by sending an <code>add-method-slot!</code> message with a message name and a lambda form with <code>self</code>, <code>resend</code>, and <code>args</code> formals, and a <code>body</code>. This shortens the following code:</p>
+    <p>This is syntactic sugar for the often-used idiom to define a method slot by sending an <code>set-method-slot!</code> message with a message name and a lambda form with <code>self</code>, <code>resend</code>, and <code>args</code> formals, and a <code>body</code>. This shortens the following code:</p>
 
-    <p><pre><code>(obj 'add-method-slot!
+    <p><pre><code>(obj 'set-method-slot!
         `average
         (lambda (self resend a b)
         (/ (+ a b) 2)))</code></pre></p>
@@ -190,8 +190,8 @@ SPDX-License-Identifier: MIT
     <p>This allows for shortening the following example:</p>
 
     <p><pre><code>(define o (*the-root-object* 'clone))
-        (o 'add-value-slot! `constant `set-constant! 5)
-        (o 'add-method-slot! `add
+        (o 'set-value-slot! `constant `set-constant! 5)
+        (o 'set-method-slot! `add
           (lambda (self resend summand)
             (+ summand (self 'constant)))))
     </pre></code></p>

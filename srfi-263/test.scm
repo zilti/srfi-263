@@ -12,23 +12,23 @@
 (let ((class (*the-root-object* 'clone)))
   (assert (eq? *the-root-object* (car ((class 'mirror) 'immediate-ancestor-list))))
 
-  (class 'add-method-slot! 'testmethod testmethod)
+  (class 'set-method-slot! 'testmethod testmethod)
   (assert (eq? 'success (class 'testmethod)))
 
-  (class 'add-value-slot! 'val 'set-val! 10)
+  (class 'set-value-slot! 'val 'set-val! 10)
   (assert (eq? 10 (class 'val)))
   (class 'set-val! 20)
   (assert (eq? 20 (class 'val)))
   (assert (= 4 (length ((class 'mirror) 'immediate-message-alist))))
-  (class 'add-value-slot! 'val 40)
+  (class 'set-value-slot! 'val 40)
   (assert (eq? 40 (class 'val)))
   (assert (= 3 (length ((class 'mirror) 'immediate-message-alist))))
   ;; Deleting the setter keeps the getter
-  (class 'add-value-slot! 'val 'set-val! 10)
+  (class 'set-value-slot! 'val 'set-val! 10)
   (class 'delete-slot! 'set-val!)
   (assert (= 3 (length ((class 'mirror) 'immediate-message-alist))))
   ;; Deleting the getter also deletes the setter
-  (class 'add-value-slot! 'val 'set-val! 10)
+  (class 'set-value-slot! 'val 'set-val! 10)
   (class 'delete-slot! 'val)
   (assert (= 2 (length ((class 'mirror) 'immediate-message-alist))))
   )
@@ -37,14 +37,14 @@
 
 (let* ((firstlevel (*the-root-object* 'clone))
        (secondlevel (firstlevel 'clone)))
-  (firstlevel 'add-method-slot! 'testmethod testmethod)
+  (firstlevel 'set-method-slot! 'testmethod testmethod)
   (assert (eq? 'success (secondlevel 'testmethod)))
-  (firstlevel 'add-value-slot! 'val 'set-val! 10)
+  (firstlevel 'set-value-slot! 'val 'set-val! 10)
   (assert (eq? 10 (secondlevel 'val)))
   (secondlevel 'set-val! 20)
   (assert (eq? 10 (firstlevel 'val)))
   (assert (eq? 20 (secondlevel 'val)))
-  (firstlevel 'add-value-slot! 'val #f 30)
+  (firstlevel 'set-value-slot! 'val #f 30)
   (assert (eq? 30 (firstlevel 'val)))
   (assert (eq? 20 (secondlevel 'val)))
 
@@ -56,13 +56,13 @@
 (let* ((adderclass (*the-root-object* 'clone))
        (squareclass (*the-root-object* 'clone))
        (mathclass (squareclass 'clone)))
-  (adderclass 'add-method-slot! 'add1
+  (adderclass 'set-method-slot! 'add1
               (lambda (self resend val)
                 (add1 val)))
-  (squareclass 'add-method-slot! 'square
+  (squareclass 'set-method-slot! 'square
                (lambda (self resend val)
                  (* val val)))
-  (mathclass 'add-parent-slot! 'adder adderclass)
+  (mathclass 'set-parent-slot! 'adder adderclass)
   (assert (= 10 (adderclass 'add1 9)))
   (assert (= 9 (squareclass 'square 3)))
   (assert (= 9 (mathclass 'add1 8)))
@@ -76,8 +76,8 @@
            (cont #f))))
     ))
 
-  (adderclass 'add-method-slot! 'reset (lambda (self resend x) 5))
-  (squareclass 'add-method-slot! 'reset (lambda (self resend x) 5))
+  (adderclass 'set-method-slot! 'reset (lambda (self resend x) 5))
+  (squareclass 'set-method-slot! 'reset (lambda (self resend x) 5))
 
   (assert
    (call-with-current-continuation
@@ -102,6 +102,6 @@
 (testobject 'set-testval! 20)
 (assert (eq? 20 (testobject 'testval)))
 
-(define-method (testobject methodslot self resend a b)
+(set-method! (testobject methodslot self resend a b)
   (+ a b))
 (assert (eq? 50 (testobject 'methodslot 20 30)))

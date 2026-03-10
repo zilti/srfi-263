@@ -48,9 +48,9 @@
 
 (define (slot-add-message-name type)
   (case type
-    ((value) 'add-value-slot!)
-    ((method) 'add-method-slot!)
-    ((parent) 'add-parent-slot!)))
+    ((value) 'set-value-slot!)
+    ((method) 'set-method-slot!)
+    ((parent) 'set-parent-slot!)))
 
 (define (gen-accessors type getter-name setter-name value)
   (values
@@ -183,10 +183,6 @@
 (define (make-object-data)
   (make-object-data* '() '() '()))
 
-(define *maybe-the-root-object*
-  (let ((data (make-object-data)))
-    #f))
-
 (define (*object* obj-data)
   (letrec
       ((obj-handler
@@ -204,35 +200,35 @@
     (set-message-alist!
      obj-data
      (alist-cons
-      'add-method-slot!
+      'set-method-slot!
       (lambda (self resend name . args)
         (apply add-slot! ((self 'mirror) '--object-data) 'method name args))
       (get-message-alist obj-data)))
     (set-slot-list!
      obj-data
-     (append `((add-method-slot! #f method)) (get-slot-list obj-data)))
-    (object 'add-method-slot! 'mirror
+     (append `((set-method-slot! #f method)) (get-slot-list obj-data)))
+    (object 'set-method-slot! 'mirror
             (lambda (self resend)
               (mirror self obj-data)))
-    (object 'add-method-slot! 'clone
+    (object 'set-method-slot! 'clone
             (lambda (self resend)
               (let ((cloned-object (*object* (make-object-data))))
                 (add-slot! ((cloned-object 'mirror) '--object-data)
                            'parent 'parent self)
                 cloned-object)))
-    (object 'add-method-slot! 'delete-slot!
+    (object 'set-method-slot! 'delete-slot!
             (lambda (self resend name)
               (delete-slot! ((self 'mirror) '--object-data) name)))
-    (object 'add-method-slot! 'add-value-slot!
+    (object 'set-method-slot! 'set-value-slot!
             (lambda (self resend name . args)
               (apply add-slot! ((self 'mirror) '--object-data) 'value name args)))
-    (object 'add-method-slot! 'add-parent-slot!
+    (object 'set-method-slot! 'set-parent-slot!
             (lambda (self resend name . args)
               (apply add-slot! ((self 'mirror) '--object-data) 'parent name args)))
-    (object 'add-method-slot! 'message-not-understood
+    (object 'set-method-slot! 'message-not-understood
             (lambda (self resend message args)
               (error "Message not understood" self message args)))
-    (object 'add-method-slot! 'ambiguous-message-send
+    (object 'set-method-slot! 'ambiguous-message-send
             (lambda (self resend message args)
               (error "Message ambiguous" self message args)))
     object))
