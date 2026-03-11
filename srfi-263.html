@@ -95,15 +95,17 @@ SPDX-License-Identifier: MIT
 
     <h5 id="spec-objsystem-clone"><code>clone</code> - <i>message</i></h5>
 
-    <p>Return a clone of the message recipient. This creates a new object with a single slot, <code>parent</code>, which points to the object cloned from.</p>
+    <p>Return a clone of the message recipient. This creates a new object with two slots: <code>parent</code>, which points to the object cloned from; and <code>mirror</code>, see below.</p>
 
     <h5 id="spec-objsystem-mirror"><code>mirror</code> - <i>message</i></h5>
 
-    <p>Return a mirror object that contains various slots providing reflection information about the receiver.</p>
+    <p>Return a mirror object that contains various slots providing reflection information about the receiver. Mirror objects are full-featured objects that can be modified and cloned. An object's mirror object is a descendant of that object's parent's mirror.</p>
 
     <h5 id="spec-objsystem-add-value-slot"><code>set-value-slot! getter [setter] value</code> - <i>message</i></h5>
 
     <p>Add a new value slot to the recipient. The value of the slot can be retrieved with the getter message. If a setter message is given, that message can be used to change the value of the slot.</p>
+
+    <p>Using the setter of a value slot will set the value of that slot on the <i>self</i> object, thus implicitly creating a value slot on that object.</p>
 
     <h5 id="spec-objsystem-add-method-slot"><code>set-method-slot! getter [setter] proc</code> - <i>message</i></h5>
 
@@ -117,7 +119,7 @@ SPDX-License-Identifier: MIT
 
     <h5 id="spec-objsystem-delete-slot"><code>delete-slot! name</code> - <i>message</i></h5>
 
-    <p>Delete the slot named <code>name</code> from the receiving object. This also removes the setter corresponding to <code>name</code>, if any. Beware that the parents might contain the same slot, so a message send can still succeed even after a slot is deleted.</p>
+    <p>Delete the slot named <code>name</code> from the receiving object. This also removes the setter corresponding to <code>name</code>, if any. Beware that the parents might contain a slot of the same name, so a message send can still succeed even after a slot is deleted.</p>
 
     <h5 id="spec-objsystem-message-not-understood"><code>message-not-understood self message args</code> - <i>message</i></h5>
 
@@ -137,15 +139,15 @@ SPDX-License-Identifier: MIT
 
     <h5 id="spec-mirror-immediate-ancestor-list"><code>immediate-ancestor-list</code> - <i>message</i></h5>
 
-    <p>This message returns a raw list of all direct ancestors of the mirrored object.</p>
+    <p>This message returns a raw list of all immediate ancestors - the ones listed as parent slots - of the mirrored object.</p>
 
     <h5 id="spec-mirror-full-ancestor-list"><code>full-ancestor-list</code> - <i>message</i></h5>
 
-    <p>This message returns a raw list of all direct and indirect ancestors - all the way up to the root object - of the mirrored object.</p>
+    <p>This message returns a raw list of all ancestors - all the way up to the root object - of the mirrored object.</p>
 
     <h5 id="spec-mirror-immediate-slot-list"><code>immediate-slot-list</code> - <i>message</i></h5>
 
-    <p>This message returns a list of slots in the mirrored object. The elements of the list are lists with three elements each:</p>
+    <p>This message returns a list of slots in the mirrored object. For a freshly cloned object, these will be <i>parent</i> and <i>mirror</i>. The elements of the list are lists with three elements each:</p>
 
     <ul>
       <li>getter-name / method-name</li>

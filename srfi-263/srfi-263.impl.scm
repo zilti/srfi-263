@@ -1,7 +1,9 @@
 (import (scheme base)
         (scheme case-lambda)
         (scheme cxr)
-        (srfi 1))
+        (scheme write)
+        (srfi 1)
+        (trace))
 
 ;;; Helpers
 
@@ -87,12 +89,14 @@
          obj-data (cons value (get-parent-list obj-data)))))))
 
 (define (method-finder name message-alist)
-  (lambda (self)
-    (cond ((if (eq? name 'mirror)
-                (assq name message-alist)
-                (assq name ((self 'mirror) 'immediate-message-alist)))
-           => cdr)
-          (else #f))))
+  (letrec ((mfinder
+            (lambda (self)
+              (cond ((or
+                      (assq name message-alist)
+                      (assq name ((self 'mirror) 'immediate-message-alist)))
+                     => cdr)
+                    (else #f)))))
+    mfinder))
 
 (define (recursive-lookup self checker skip?)
   (cond
@@ -100,8 +104,8 @@
     => (lambda (alist-entry)
          (values alist-entry #t)))
    (else
-    (let ((mirror (self 'mirror)))
-      (let loop ((parents (mirror 'immediate-ancestor-list))
+    (let ((obj-data ((self 'mirror) '--obj-data)))
+      (let loop ((parents (get-parent-list obj-data))
                  (handler-count 0)
                  (handler #f)
                  (found #f))
@@ -157,20 +161,6 @@
                    (else target-override))))
       (send-with-error-handling caller target handler-name '() (eq? target-override #f) args))))
 
-;;;; Mirror
-
-(define (mirror self obj-data)
-  (lambda (message . args)
-    (case message
-      ((--object-data) obj-data)
-      ((immediate-message-alist) (get-message-alist obj-data))
-      ((immediate-ancestor-list) (get-parent-list obj-data))
-      ((full-ancestor-list) (recursive-ancestor-collector self))
-      ((immediate-slot-list) (get-slot-list obj-data))
-      ((full-slot-list) (recursive-slot-collector self))
-      (else
-       (error "Message not understood" message)))))
-
 ;;;; Root object
 
 (define-record-type object-data
@@ -187,48 +177,86 @@
   (letrec
       ((obj-handler
         (lambda (message . args)
-          (if (eq? message 'mirror)
-              (mirror obj-handler obj-data)
-              (send-with-error-handling
-               obj-handler obj-handler message (get-message-alist obj-data) #f args)))))
+          (send-with-error-handling
+           obj-handler obj-handler message (get-message-alist obj-data) #f args))))
     obj-handler))
 
+(define (set-method-slot! obj-data name . args)
+  (apply add-slot! obj-data 'method name args))
+
+(define (clone-object obj mirror?)
+  (let* ((obj-data (make-object-data))
+         (cloned-object (*object* obj-data)))
+    (add-slot! obj-data 'parent 'parent obj)
+    (set-method-slot!
+     obj-data 'mirror
+     (lambda (self resend)
+       (let-values (((new-mirror new-mirror-data)
+                     (clone-object (obj 'mirror) #t)))
+         (populate-mirror new-mirror new-mirror-data obj-data))))
+    (when mirror?
+      (set-method-slot! obj-data 'clone
+                        (lambda (self resend)
+                          (let-values (((new-obj new-data)
+                                        (clone-object self #t)))
+                            new-obj))))
+    (values cloned-object obj-data)))
+
+(define (populate-mirror mirror mirror-data obj-data)
+  (map
+   (lambda (name proc)
+     (set-method-slot! mirror-data name proc))
+   '(--obj-data immediate-message-alist
+                immediate-ancestor-list full-ancestor-list
+                immediate-slot-list full-slot-list)
+   (list (lambda (self resend) obj-data)
+         (lambda (self resend) (get-message-alist obj-data))
+         (lambda (self resend) (get-parent-list obj-data))
+         (lambda (self resend) (recursive-ancestor-collector self))
+         (lambda (self resend) (get-slot-list obj-data))
+         (lambda (self resend) (recursive-slot-collector self))))
+  mirror)
+
 (define *the-root-object*
-  (let* ((object (*object* (make-object-data)))
-         (mirror (object 'mirror))
-         (obj-data (mirror '--object-data)))
+  (let* ((obj-data (make-object-data))
+         (object (*object* obj-data)))
     (set-message-alist!
      obj-data
-     (alist-cons
-      'set-method-slot!
-      (lambda (self resend name . args)
-        (apply add-slot! ((self 'mirror) '--object-data) 'method name args))
-      (get-message-alist obj-data)))
+     (alist-cons 'set-method-slot!
+                 (lambda (self resend name . args)
+                   (apply set-method-slot! ((self 'mirror) '--obj-data)
+                          name args))
+                 (get-message-alist obj-data)))
     (set-slot-list!
      obj-data
      (append `((set-method-slot! #f method)) (get-slot-list obj-data)))
-    (object 'set-method-slot! 'mirror
-            (lambda (self resend)
-              (mirror self obj-data)))
-    (object 'set-method-slot! 'clone
-            (lambda (self resend)
-              (let ((cloned-object (*object* (make-object-data))))
-                (add-slot! ((cloned-object 'mirror) '--object-data)
-                           'parent 'parent self)
-                cloned-object)))
-    (object 'set-method-slot! 'delete-slot!
-            (lambda (self resend name)
-              (delete-slot! ((self 'mirror) '--object-data) name)))
-    (object 'set-method-slot! 'set-value-slot!
-            (lambda (self resend name . args)
-              (apply add-slot! ((self 'mirror) '--object-data) 'value name args)))
-    (object 'set-method-slot! 'set-parent-slot!
-            (lambda (self resend name . args)
-              (apply add-slot! ((self 'mirror) '--object-data) 'parent name args)))
-    (object 'set-method-slot! 'message-not-understood
-            (lambda (self resend message args)
-              (error "Message not understood" self message args)))
-    (object 'set-method-slot! 'ambiguous-message-send
-            (lambda (self resend message args)
-              (error "Message ambiguous" self message args)))
+    (set-method-slot!
+     obj-data 'mirror
+     (lambda (self resend)
+       (let-values (((root-mirror mirror-data) (clone-object *the-root-object* #t)))
+         (populate-mirror root-mirror mirror-data obj-data))))
+    (set-method-slot!
+     obj-data 'clone
+     (lambda (self resend)
+       (clone-object self #f)))
+    (set-method-slot!
+     obj-data 'delete-slot!
+     (lambda (self resend name)
+       (delete-slot! ((self 'mirror) '--obj-data) name)))
+    (set-method-slot!
+     obj-data 'set-value-slot!
+     (lambda (self resend name . args)
+       (apply add-slot! ((self 'mirror) '--obj-data) 'value name args)))
+    (set-method-slot!
+     obj-data 'set-parent-slot!
+     (lambda (self resend name . args)
+       (apply add-slot! ((self 'mirror) '--obj-data) 'parent name args)))
+    (set-method-slot!
+     obj-data 'message-not-understood
+     (lambda (self resend message args)
+       (error "Message not understood" self message args)))
+    (set-method-slot!
+     obj-data 'ambiguous-message-send
+     (lambda (self resend message args)
+       (error "Message ambiguous" self message args)))
     object))

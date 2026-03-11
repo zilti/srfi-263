@@ -19,18 +19,18 @@
   (assert (eq? 10 (class 'val)))
   (class 'set-val! 20)
   (assert (eq? 20 (class 'val)))
-  (assert (= 4 (length ((class 'mirror) 'immediate-message-alist))))
+  (assert (= 5 (length ((class 'mirror) 'immediate-message-alist))))
   (class 'set-value-slot! 'val 40)
   (assert (eq? 40 (class 'val)))
-  (assert (= 3 (length ((class 'mirror) 'immediate-message-alist))))
+  (assert (= 4 (length ((class 'mirror) 'immediate-message-alist))))
   ;; Deleting the setter keeps the getter
   (class 'set-value-slot! 'val 'set-val! 10)
   (class 'delete-slot! 'set-val!)
-  (assert (= 3 (length ((class 'mirror) 'immediate-message-alist))))
+  (assert (= 4 (length ((class 'mirror) 'immediate-message-alist))))
   ;; Deleting the getter also deletes the setter
   (class 'set-value-slot! 'val 'set-val! 10)
   (class 'delete-slot! 'val)
-  (assert (= 2 (length ((class 'mirror) 'immediate-message-alist))))
+  (assert (= 3 (length ((class 'mirror) 'immediate-message-alist))))
   )
 
 ;;; Inheritance
@@ -48,8 +48,8 @@
   (assert (eq? 30 (firstlevel 'val)))
   (assert (eq? 20 (secondlevel 'val)))
 
-  (assert (= 1 (length ((firstlevel 'mirror) 'full-ancestor-list))))
-  (assert (= 2 (length ((secondlevel 'mirror) 'full-ancestor-list)))))
+  (assert (= 2 (length ((firstlevel 'mirror) 'full-ancestor-list))))
+  (assert (= 3 (length ((secondlevel 'mirror) 'full-ancestor-list)))))
 
 ;;;; Multiple Inheritance
 
