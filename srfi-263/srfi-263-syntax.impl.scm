@@ -9,17 +9,17 @@
           (lambda (self resend args ...)
             body1 body ...)))))
 
-(define-syntax define-object
+(define-syntax clone-object
   (syntax-rules ()
-    ((_ name (creation-parent (parent-name parent-object) ...)
+    ((_ (creation-parent (parent-name parent-object) ...)
         slots ...)
-     (define name (let ((o (creation-parent 'clone)))
-                    (o 'set-parent-slot! 'parent-name parent-object)
-                    ...
-                    (define-object/add-slots! o slots ...)
-                    o)))))
+     (let ((o (creation-parent 'clone)))
+       (o 'set-parent-slot! 'parent-name parent-object)
+       ...
+       (clone-object/add-slots! o slots ...)
+       o))))
 
-(define-syntax define-object/add-slots!
+(define-syntax clone-object/add-slots!
   (syntax-rules ()
     ((_ o)
      (void))
@@ -28,14 +28,20 @@
      (begin
        (o 'set-method-slot! `method-name (lambda method-args
                                            body ...))
-       (define-object/add-slots! o slots ...)))
+       (clone-object/add-slots! o slots ...)))
     ((_ o (slot-getter slot-setter slot-value)
         slots ...)
      (begin
        (o 'set-value-slot! `slot-getter `slot-setter slot-value)
-       (define-object/add-slots! o slots ...)))
+       (clone-object/add-slots! o slots ...)))
     ((_ o (slot-getter slot-value)
         slots ...)
      (begin
        (o 'set-value-slot! `slot-getter slot-value)
-       (define-object/add-slots! o slots ...)))))
+       (clone-object/add-slots! o slots ...)))))
+
+(define-syntax define-object
+  (syntax-rules ()
+    ((_ name body ...)
+     (define name
+       (clone-object body ...)))))

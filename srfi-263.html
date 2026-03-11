@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-<!--
-SPDX-FileCopyrightText: 2025 Daniel Ziltener
-SPDX-License-Identifier: MIT
--->
+  <!--
+      SPDX-FileCopyrightText: 2025 Daniel Ziltener
+      SPDX-License-Identifier: MIT
+    -->
   <head>
     <meta charset="utf-8">
     <title>SRFI 263: Prototype Object System</title>
@@ -13,9 +13,9 @@ SPDX-License-Identifier: MIT
   <body>
     <h1><a href="https://srfi.schemers.org/"><img class="srfi-logo" src="https://srfi.schemers.org/srfi-logo.svg" alt="SRFI surfboard logo" /></a>263: Prototype Object System</h1>
 
-<p>by Daniel Ziltener</p>
+    <p>by Daniel Ziltener</p>
 
-<h2 id="status">Status</h2>
+    <h2 id="status">Status</h2>
 
     <p>This SRFI is currently in <em>draft</em> status.  Here is <a href="https://srfi.schemers.org/srfi-process.html">an explanation</a> of each status that a SRFI can hold.  To provide input on this SRFI, please send email to <code><a href="mailto:srfi+minus+263+at+srfi+dotschemers+dot+org">srfi-263@<span class="antispam">nospam</span>srfi.schemers.org</a></code>.  To subscribe to the list, follow <a href="https://srfi.schemers.org/srfi-list-subscribe.html">these instructions</a>.  You can access previous messages via the mailing list <a href="https://srfi-email.schemers.org/srfi-263/">archive</a>.</p>
     <ul>
@@ -23,31 +23,39 @@ SPDX-License-Identifier: MIT
       <li>60-day deadline: 2025-08-08</li>
       <li>Draft #1 published: 2025-06-09</li>
       <li>Daniel's <a href="https://forgejo.lyrion.ch/zilti/srfi-263">personal
-      Git repo for this SRFI</a> for reference while the SRFI is in
+          Git repo for this SRFI</a> for reference while the SRFI is in
         <em>draft</em> status (<a href="https://htmlpreview.github.io/?https://forgejo.lyrion.ch/zilti/srfi-263/raw/branch/master/srfi-263.html">preview</a>)</li>
     </ul>
 
-<h2 id="abstract">Abstract</h2>
+    <h2 id="abstract">Abstract</h2>
 
-<p>This SRFI proposes a "Self"-inspired prototype object system. Such an object system works by having prototype objects that are cloned repeatedly to modify, extend, and use them, and is interacted with by passing messages.</p>
+    <p>This SRFI proposes a "Self"-inspired prototype object system. Such an object system works by having prototype objects that are cloned repeatedly to modify, extend, and use them, and is interacted with by passing messages.</p>
 
-<h2 id="issues">Issues</h2>
+    <h2 id="issues">Issues</h2>
 
-<p>None at present.</p>
+    <p>None at present.</p>
 
-<h2 id="rationale">Rationale</h2>
+    <h2 id="rationale">Rationale</h2>
 
-<p>Objects can be very useful for scenarios where an inheritance of functionality and a strong pairing between functionality and data is desirable. Due to its simple yet versatile concept, a prototype-based object system is a good fit for Scheme to fill that role.</p>
+    <p>Objects can be very useful for scenarios where an inheritance of functionality and a strong pairing between functionality and data is desirable. Due to its simple yet versatile concept, a prototype-based object system is a good fit for Scheme to fill that role.</p>
 
-<h2 id="specification">Specification</h2>
+    <h2 id="specification">Specification</h2>
 
-<h3 id="spec-objsystem">Object System</h3>
+    <h3 id="spec-objsystem">Object System <code>(srfi 263)</code></h3>
 
-<h4 id="spec-objsystem-objects">Objects</h4>
+    <h4 id="spec-objsystem-exported-identifiers">Exported Identifiers</h4>
+
+    <p>Since all interaction happens via the object system itself, there is only one identifier exported by this library.</p>
+      
+    <ul>
+      <li>*the-root-object*</li>
+    </ul>
+
+    <h4 id="spec-objsystem-objects">Objects</h4>
 
     <p>The objects are based on closures. To send a message to that object, the closure is applied to the message selector (i.e., the slot name), followed by a number of arguments. The return value(s) of the message are returned from this application.</p>
 
-<h4 id="spec-objsystem-slots">Slots</h4>
+    <h4 id="spec-objsystem-slots">Slots</h4>
 
     <p>Objects contain slots, each of which is of one of three types:</p>
 
@@ -84,8 +92,6 @@ SPDX-License-Identifier: MIT
     <p>It is important to understand the difference between sending a message to an object and re-sending it to the object. When a message is just sent to an object, methods will get that object as the <code>self</code> argument. When a message is resent, <code>self</code> instead refers to the object it was originally sent to.</p>
 
     <h4 id="spec-objsystem-interface">Interface</h4>
-
-    <p>Since objects are created by sending a clone message to other objects, there has to be a kind of root object.</p>
 
     <h5 id="spec-objsystem-the-root-object"><code>*the-root-object*</code> - <i>class</i></h5>
 
@@ -166,20 +172,28 @@ SPDX-License-Identifier: MIT
     </ul>
 
     <h3 id="spec-sugar">Syntactic Sugar <code>(srfi 263 syntax)</code></h3>
+    
+    <h4 id="spec-sugar-exported-identifiers">Exported Identifiers</h4>
+
+    <ul>
+      <li>define-method</li>
+      <li>define-object</li>
+      <li>clone-object</li>
+    </ul>
 
     <h4 id="spec-sugar-define-method"><code>define-method (obj message self resend . args) body ...</code> - <i>syntax</i></h4>
 
     <p>This is syntactic sugar for the often-used idiom to define a method slot by sending an <code>set-method-slot!</code> message with a message name and a lambda form with <code>self</code>, <code>resend</code>, and <code>args</code> formals, and a <code>body</code>. This shortens the following code:</p>
 
     <p><pre><code>(obj 'set-method-slot!
-        `average
-        (lambda (self resend a b)
-        (/ (+ a b) 2)))</code></pre></p>
+          `average
+          (lambda (self resend a b)
+          (/ (+ a b) 2)))</code></pre></p>
 
     <p>to this:</p>
 
     <p><pre><code>(define-method (obj average self resend a b)
-        (/ (+ a b) 2))</code></pre></p>
+          (/ (+ a b) 2))</code></pre></p>
 
     <h4 id="spec-sugar-define-object"><code>define-object name (parent other-parents ...) slots ...</code> - <i>syntax</i></h4>
 
@@ -192,18 +206,22 @@ SPDX-License-Identifier: MIT
     <p>This allows for shortening the following example:</p>
 
     <p><pre><code>(define o (*the-root-object* 'clone))
-        (o 'set-value-slot! `constant `set-constant! 5)
-        (o 'set-method-slot! `add
+          (o 'set-value-slot! `constant `set-constant! 5)
+          (o 'set-method-slot! `add
           (lambda (self resend summand)
-            (+ summand (self 'constant)))))
+          (+ summand (self 'constant)))))
     </pre></code></p>
 
     <p>into this:</p>
 
     <p><pre><code>(define-object o (*the-root-object*)
-        (constant set-constant! 5)
-        ((add self resend summand)
+          (constant set-constant! 5)
+          ((add self resend summand)
           (+ summand (self 'constant))))</code></pre></p>
+
+    <h4 id="spec-sugar-clone-object"><code>clone-object (parent other-parents ...) slots ...</code> - <i>syntax</i></h4>
+
+    <p>This works exactly like <i>define-object</i>, but returns the resulting object instead of assigning it to a variable.</p>
 
     <h3 id="spec-further">Further Concepts and Thoughts</h3>
 
@@ -211,39 +229,39 @@ SPDX-License-Identifier: MIT
 
     <p>Message names don't have any required type. They are only compared using <code>eq?</code>. Because of this, any Scheme object can be used a message name. This means that it is possible to use a private Scheme value, e.g. a freshly allocated list, as a slot name. This can be used to keep slot names private, since it is not possible to create an object which is <code>eq?</code> to such an object except by receiving a reference to that object.</p>
 
-<h2 id="implementation">Implementation</h2>
+    <h2 id="implementation">Implementation</h2>
 
-<p>The reference implementation is written in pure R<sup>7</sup>RS Small, tested in Chicken Scheme. The reference implementation source can be found <a href="https://github.com/scheme-requests-for-implementation/srfi-263/" target="_blank">here</a>.
+    <p>The reference implementation is written in pure R<sup>7</sup>RS Small, tested in Chicken Scheme. The reference implementation source can be found <a href="https://github.com/scheme-requests-for-implementation/srfi-263/" target="_blank">here</a>.
 
-<h2 id="acknowledgements">Acknowledgements</h2>
+      <h2 id="acknowledgements">Acknowledgements</h2>
 
-<p>Thanks to John Cowan for suggesting the creation of this SRFI; to Felix Winkelmann and the Chicken Community for support and for sparking my interest in Scheme in the first place; and to Arthur A. Gleckler for looking after me and guiding me through the SRFI process; and of course Jorgen Schaefer, who made the Prometheus object system after which this SRFI is modelled.</p>
+    <p>Thanks to John Cowan for suggesting the creation of this SRFI; to Felix Winkelmann and the Chicken Community for support and for sparking my interest in Scheme in the first place; and to Arthur A. Gleckler for looking after me and guiding me through the SRFI process; and of course Jorgen Schaefer, who made the Prometheus object system after which this SRFI is modelled.</p>
 
-<h2 id="copyright">Copyright</h2>
-<p>&copy; 2025 Daniel Ziltener, Jorgen Schaefer.</p>
+    <h2 id="copyright">Copyright</h2>
+    <p>&copy; 2025 Daniel Ziltener, Jorgen Schaefer.</p>
 
-<p>
-  Permission is hereby granted, free of charge, to any person
-  obtaining a copy of this software and associated documentation files
-  (the "Software"), to deal in the Software without restriction,
-  including without limitation the rights to use, copy, modify, merge,
-  publish, distribute, sublicense, and/or sell copies of the Software,
-  and to permit persons to whom the Software is furnished to do so,
-  subject to the following conditions:</p>
+    <p>
+      Permission is hereby granted, free of charge, to any person
+      obtaining a copy of this software and associated documentation files
+      (the "Software"), to deal in the Software without restriction,
+      including without limitation the rights to use, copy, modify, merge,
+      publish, distribute, sublicense, and/or sell copies of the Software,
+      and to permit persons to whom the Software is furnished to do so,
+      subject to the following conditions:</p>
 
-<p>
-  The above copyright notice and this permission notice (including the
-  next paragraph) shall be included in all copies or substantial
-  portions of the Software.</p>
-<p>
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-  NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
-  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-  SOFTWARE.</p>
+    <p>
+      The above copyright notice and this permission notice (including the
+      next paragraph) shall be included in all copies or substantial
+      portions of the Software.</p>
+    <p>
+      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+      MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+      NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+      BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+      ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+      CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+      SOFTWARE.</p>
 
-  <hr>
-  <address>Editor: <a href="mailto:srfi-editors+at+srfi+dot+schemers+dot+org">Arthur A. Gleckler</a></address></body></html>
+    <hr>
+    <address>Editor: <a href="mailto:srfi-editors+at+srfi+dot+schemers+dot+org">Arthur A. Gleckler</a></address></body></html>
