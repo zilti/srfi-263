@@ -7,9 +7,9 @@
 ;;; Basic Functionality
 
 (assert (null? ((*the-root-object* 'mirror) 'immediate-ancestor-list)))
-(assert (= 8 (length ((*the-root-object* 'mirror) 'immediate-message-alist))))
+(assert (= 9 (length ((*the-root-object* 'mirror) 'immediate-message-alist))))
 
-(let ((class (*the-root-object* 'clone)))
+(let ((class (*the-root-object* 'derive)))
   (assert (eq? *the-root-object* (car ((class 'mirror) 'immediate-ancestor-list))))
 
   (class 'set-method-slot! 'testmethod testmethod)
@@ -35,8 +35,8 @@
 
 ;;; Inheritance
 
-(let* ((firstlevel (*the-root-object* 'clone))
-       (secondlevel (firstlevel 'clone)))
+(let* ((firstlevel (*the-root-object* 'derive))
+       (secondlevel (firstlevel 'derive)))
   (firstlevel 'set-method-slot! 'testmethod testmethod)
   (assert (eq? 'success (secondlevel 'testmethod)))
   (firstlevel 'set-value-slot! 'val 'set-val! 10)
@@ -53,9 +53,9 @@
 
 ;;;; Multiple Inheritance
 
-(let* ((adderclass (*the-root-object* 'clone))
-       (squareclass (*the-root-object* 'clone))
-       (mathclass (squareclass 'clone)))
+(let* ((adderclass (*the-root-object* 'derive))
+       (squareclass (*the-root-object* 'derive))
+       (mathclass (squareclass 'derive)))
   (adderclass 'set-method-slot! 'add1
               (lambda (self resend val)
                 (add1 val)))

@@ -66,7 +66,7 @@
                 (if setter-name (list setter-name value) value)))
        #f)))
 
-(define (set-slots! obj-data type getter-name getter setter-name setter)
+(define (set-object-data-slots! obj-data type getter-name getter setter-name setter)
   (let ((new-messages (if setter
                           `((,getter-name . ,getter)
                             (,setter-name . ,setter))
@@ -76,14 +76,14 @@
     (set-slot-list!
      obj-data (cons `(,getter-name ,setter-name ,type) (get-slot-list obj-data)))))
 
-(define (add-slot! obj-data type getter-name . args)
+(define (set-slot! obj-data type getter-name . args)
   (let* ((setter? (< 1 (length args)))
          (setter-name (and setter? (car args)))
          (value (if setter? (cadr args) (car args))))
     (let-values (((getter setter)
                   (gen-accessors type getter-name setter-name value)))
       (delete-slot! obj-data getter-name)
-      (set-slots! obj-data type getter-name getter setter-name setter)
+      (set-object-data-slots! obj-data type getter-name getter setter-name setter)
       (when (eq? type 'parent)
         (set-parent-list!
          obj-data (cons value (get-parent-list obj-data)))))))
@@ -182,25 +182,25 @@
     obj-handler))
 
 (define (set-method-slot! obj-data name . args)
-  (apply add-slot! obj-data 'method name args))
+  (apply set-slot! obj-data 'method name args))
 
-(define (clone-object obj mirror?)
+(define (derive-object obj mirror?)
   (let* ((obj-data (make-object-data))
-         (cloned-object (*object* obj-data)))
-    (add-slot! obj-data 'parent 'parent obj)
+         (derived-object (*object* obj-data)))
+    (set-slot! obj-data 'parent 'parent obj)
     (set-method-slot!
      obj-data 'mirror
      (lambda (self resend)
        (let-values (((new-mirror new-mirror-data)
-                     (clone-object (obj 'mirror) #t)))
+                     (derive-object (obj 'mirror) #t)))
          (populate-mirror new-mirror new-mirror-data obj-data))))
     (when mirror?
-      (set-method-slot! obj-data 'clone
+      (set-method-slot! obj-data 'derive
                         (lambda (self resend)
                           (let-values (((new-obj new-data)
-                                        (clone-object self #t)))
+                                        (derive-object self #t)))
                             new-obj))))
-    (values cloned-object obj-data)))
+    (values derived-object obj-data)))
 
 (define (populate-mirror mirror mirror-data obj-data)
   (map
@@ -233,12 +233,21 @@
     (set-method-slot!
      obj-data 'mirror
      (lambda (self resend)
-       (let-values (((root-mirror mirror-data) (clone-object *the-root-object* #t)))
+       (let-values (((root-mirror mirror-data) (derive-object *the-root-object* #t)))
          (populate-mirror root-mirror mirror-data obj-data))))
     (set-method-slot!
-     obj-data 'clone
+     obj-data 'derive
      (lambda (self resend)
-       (clone-object self #f)))
+       (derive-object self #f)))
+    (set-method-slot!
+     obj-data 'copy
+     (lambda (self resend)
+       (let ((mirror (self 'mirror))
+             (obj-data (make-object-data)))
+         (set-message-alist! obj-data (list-copy (mirror 'get-message-alist)))
+         (set-slot-list! obj-data (list-copy (mirror 'get-slot-list)))
+         (set-parent-list! obj-data (list-copy (mirror 'get-parent-list)))
+         (*object* obj-data))))
     (set-method-slot!
      obj-data 'delete-slot!
      (lambda (self resend name)
@@ -246,11 +255,11 @@
     (set-method-slot!
      obj-data 'set-value-slot!
      (lambda (self resend name . args)
-       (apply add-slot! ((self 'mirror) '--obj-data) 'value name args)))
+       (apply set-slot! ((self 'mirror) '--obj-data) 'value name args)))
     (set-method-slot!
      obj-data 'set-parent-slot!
      (lambda (self resend name . args)
-       (apply add-slot! ((self 'mirror) '--obj-data) 'parent name args)))
+       (apply set-slot! ((self 'mirror) '--obj-data) 'parent name args)))
     (set-method-slot!
      obj-data 'message-not-understood
      (lambda (self resend message args)

@@ -22,6 +22,7 @@
       <li>Received: 2025-05-30</li>
       <li>60-day deadline: 2025-08-08</li>
       <li>Draft #1 published: 2025-06-09</li>
+      <li>Draft #2 published: 2026-03-12</li>
       <li>Daniel's <a href="https://forgejo.lyrion.ch/zilti/srfi-263">personal
           Git repo for this SRFI</a> for reference while the SRFI is in
         <em>draft</em> status (<a href="https://htmlpreview.github.io/?https://forgejo.lyrion.ch/zilti/srfi-263/raw/branch/master/srfi-263.html">preview</a>)</li>
@@ -29,7 +30,7 @@
 
     <h2 id="abstract">Abstract</h2>
 
-    <p>This SRFI proposes a "Self"-inspired prototype object system. Such an object system works by having prototype objects that are cloned repeatedly to modify, extend, and use them, and is interacted with by passing messages.</p>
+    <p>This SRFI proposes a "Self"-inspired prototype object system. Such an object system works by having prototype objects that are derived repeatedly to modify, extend, and use them, and is interacted with by passing messages.</p>
 
     <h2 id="issues">Issues</h2>
 
@@ -99,13 +100,17 @@
 
     <p>The root object contains a number of slots by default.</p>
 
-    <h5 id="spec-objsystem-clone"><code>clone</code> - <i>message</i></h5>
+    <h5 id="spec-objsystem-derive"><code>derive</code> - <i>message</i></h5>
 
-    <p>Return a clone of the message recipient. This creates a new object with two slots: <code>parent</code>, which points to the object cloned from; and <code>mirror</code>, see below.</p>
+    <p>Return an object derived of the message recipient. This creates a new object with two slots: <code>parent</code>, which points to the object derived from; and <code>mirror</code>, see below.</p>
+
+    <h5 id="spec-objsystem-copy"><code>copy</code> - <i>message</i></h5>
+
+    <p>Return a copy of the message recipient. This creates an object with the messages and slots copied from its parents. Implementations must at least copy the list of messages and slots equivalent to using SRFI-1's <i>list-copy</i>, but may also deep-copy the messages and slots.</p>
 
     <h5 id="spec-objsystem-mirror"><code>mirror</code> - <i>message</i></h5>
 
-    <p>Return a mirror object that contains various slots providing reflection information about the receiver. Mirror objects are full-featured objects that can be modified and cloned. An object's mirror object is a descendant of that object's parent's mirror.</p>
+    <p>Return a mirror object that contains various slots providing reflection information about the receiver. Mirror objects are full-featured objects that can be modified and derived. An object's mirror object is a descendant of that object's parent's mirror.</p>
 
     <h5 id="spec-objsystem-add-value-slot"><code>set-value-slot! getter [setter] value</code> - <i>message</i></h5>
 
@@ -153,7 +158,7 @@
 
     <h5 id="spec-mirror-immediate-slot-list"><code>immediate-slot-list</code> - <i>message</i></h5>
 
-    <p>This message returns a list of slots in the mirrored object. For a freshly cloned object, these will be <i>parent</i> and <i>mirror</i>. The elements of the list are lists with three elements each:</p>
+    <p>This message returns a list of slots in the mirrored object. For a freshly derived object, these will be <i>parent</i> and <i>mirror</i>. The elements of the list are lists with three elements each:</p>
 
     <ul>
       <li>getter-name / method-name</li>
@@ -178,7 +183,8 @@
     <ul>
       <li>define-method</li>
       <li>define-object</li>
-      <li>clone-object</li>
+      <li>derive-object</li>
+      <li>copy-object</li>
     </ul>
 
     <h4 id="spec-sugar-define-method"><code>define-method (obj message self resend . args) body ...</code> - <i>syntax</i></h4>
@@ -205,7 +211,7 @@
 
     <p>This allows for shortening the following example:</p>
 
-    <p><pre><code>(define o (*the-root-object* 'clone))
+    <p><pre><code>(define o (*the-root-object* 'derive))
           (o 'set-value-slot! `constant `set-constant! 5)
           (o 'set-method-slot! `add
           (lambda (self resend summand)
@@ -219,9 +225,13 @@
           ((add self resend summand)
           (+ summand (self 'constant))))</code></pre></p>
 
-    <h4 id="spec-sugar-clone-object"><code>clone-object (parent other-parents ...) slots ...</code> - <i>syntax</i></h4>
+    <h4 id="spec-sugar-derive-object"><code>derive-object (parent other-parents ...) slots ...</code> - <i>syntax</i></h4>
 
     <p>This works exactly like <i>define-object</i>, but returns the resulting object instead of assigning it to a variable.</p>
+
+    <h4 id="spec-sugar-copy-object"><code>copy-object (parent other-parents ...)</code> - <i>syntax</i></h4>
+
+    <p>This copies the object from its first parent instead of deriving it, and otherwise works just like <i>derive-object</i>.</p>
 
     <h3 id="spec-further">Further Concepts and Thoughts</h3>
 
