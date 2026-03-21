@@ -191,15 +191,15 @@
 
     <p>This is syntactic sugar for the often-used idiom to define a method slot by sending an <code>set-method-slot!</code> message with a message name and a lambda form with <code>self</code>, <code>resend</code>, and <code>args</code> formals, and a <code>body</code>. This shortens the following code:</p>
 
-    <p><pre><code>(obj 'set-method-slot!
+    <pre><code>(obj 'set-method-slot!
           `average
           (lambda (self resend a b)
-          (/ (+ a b) 2)))</code></pre></p>
+          (/ (+ a b) 2)))</code></pre>
 
     <p>to this:</p>
 
-    <p><pre><code>(define-method (obj average self resend a b)
-          (/ (+ a b) 2))</code></pre></p>
+    <pre><code>(define-method (obj average self resend a b)
+          (/ (+ a b) 2))</code></pre>
 
     <h4 id="spec-sugar-define-object"><code>define-object name (parent other-parents ...) slots ...</code> - <i>syntax</i></h4>
 
@@ -211,19 +211,19 @@
 
     <p>This allows for shortening the following example:</p>
 
-    <p><pre><code>(define o (*the-root-object* 'derive))
+    <pre><code>(define o (*the-root-object* 'derive))
           (o 'set-value-slot! `constant `set-constant! 5)
           (o 'set-method-slot! `add
           (lambda (self resend summand)
           (+ summand (self 'constant)))))
-    </pre></code></p>
+    </code></pre>
 
     <p>into this:</p>
 
-    <p><pre><code>(define-object o (*the-root-object*)
+    <pre><code>(define-object o (*the-root-object*)
           (constant set-constant! 5)
           ((add self resend summand)
-          (+ summand (self 'constant))))</code></pre></p>
+          (+ summand (self 'constant))))</code></pre>
 
     <h4 id="spec-sugar-derive-object"><code>derive-object (parent other-parents ...) slots ...</code> - <i>syntax</i></h4>
 
