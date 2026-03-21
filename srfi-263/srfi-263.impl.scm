@@ -93,7 +93,7 @@
             (lambda (self)
               (cond ((or
                       (assq name message-alist)
-                      (assq name ((self 'mirror) 'immediate-message-alist)))
+                      (assq name (get-message-alist ((self 'mirror) '--obj-data))))
                      => cdr)
                     (else #f)))))
     mfinder))
@@ -125,7 +125,7 @@
               (values 'message-not-understood #f)))))))))
 
 (define (recursive-ancestor-collector self)
-  (let ((parents ((self 'mirror) 'immediate-ancestor-list)))
+  (let ((parents (get-parent-list ((self 'mirror) '--obj-data))))
     (if (null? parents)
         (list self)
         (apply lset-union
@@ -140,7 +140,7 @@
              (eq? (car a) (car b)))
            (list)
            (map (lambda (class)
-                  ((class 'mirror) 'immediate-slot-list))
+                  (get-slot-list ((class 'mirror) '--obj-data)))
                 parents))))
 
 ;;;; Method running
@@ -210,10 +210,10 @@
                 immediate-ancestor-list full-ancestor-list
                 immediate-slot-list full-slot-list)
    (list (lambda (self resend) obj-data)
-         (lambda (self resend) (get-message-alist obj-data))
-         (lambda (self resend) (get-parent-list obj-data))
+         (lambda (self resend) (list-copy (get-message-alist obj-data)))
+         (lambda (self resend) (list-copy (get-parent-list obj-data)))
          (lambda (self resend) (recursive-ancestor-collector self))
-         (lambda (self resend) (get-slot-list obj-data))
+         (lambda (self resend) (list-copy (get-slot-list obj-data)))
          (lambda (self resend) (recursive-slot-collector self))))
   mirror)
 
