@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-<!--
-SPDX-FileCopyrightText: 2025 Daniel Ziltener
-SPDX-License-Identifier: MIT
--->
+  <!--
+      SPDX-FileCopyrightText: 2025 Daniel Ziltener
+      SPDX-License-Identifier: MIT
+    -->
   <head>
     <meta charset="utf-8">
     <title>SRFI 263: Prototype Object System</title>
@@ -13,9 +13,9 @@ SPDX-License-Identifier: MIT
   <body>
     <h1><a href="https://srfi.schemers.org/"><img class="srfi-logo" src="https://srfi.schemers.org/srfi-logo.svg" alt="SRFI surfboard logo" /></a>263: Prototype Object System</h1>
 
-<p>by Daniel Ziltener</p>
+    <p>by Daniel Ziltener</p>
 
-<h2 id="status">Status</h2>
+    <h2 id="status">Status</h2>
 
     <p>This SRFI is currently in <em>draft</em> status.  Here is <a href="https://srfi.schemers.org/srfi-process.html">an explanation</a> of each status that a SRFI can hold.  To provide input on this SRFI, please send email to <code><a href="mailto:srfi+minus+263+at+srfi+dotschemers+dot+org">srfi-263@<span class="antispam">nospam</span>srfi.schemers.org</a></code>.  To subscribe to the list, follow <a href="https://srfi.schemers.org/srfi-list-subscribe.html">these instructions</a>.  You can access previous messages via the mailing list <a href="https://srfi-email.schemers.org/srfi-263/">archive</a>.</p>
     <ul>
@@ -28,27 +28,35 @@ SPDX-License-Identifier: MIT
         <em>draft</em> status</li>
     </ul>
 
-<h2 id="abstract">Abstract</h2>
+    <h2 id="abstract">Abstract</h2>
 
-<p>This SRFI proposes a "Self"-inspired prototype object system. Such an object system works by having prototype objects that are cloned repeatedly to modify, extend, and use them, and is interacted with by passing messages.</p>
+    <p>This SRFI proposes a "Self"-inspired prototype object system. Such an object system works by having prototype objects that are derived repeatedly to modify, extend, and use them, and is interacted with by passing messages.</p>
 
-<h2 id="issues">Issues</h2>
+    <h2 id="issues">Issues</h2>
 
-<p>None at present.</p>
+    <p>None at present.</p>
 
-<h2 id="rationale">Rationale</h2>
+    <h2 id="rationale">Rationale</h2>
 
-<p>Objects can be very useful for scenarios where an inheritance of functionality and a strong pairing between functionality and data is desirable. Due to its simple yet versatile concept, a prototype-based object system is a good fit for Scheme to fill that role.</p>
+    <p>Objects can be very useful for scenarios where an inheritance of functionality and a strong pairing between functionality and data is desirable. Due to its simple yet versatile concept, a prototype-based object system is a good fit for Scheme to fill that role.</p>
 
-<h2 id="specification">Specification</h2>
+    <h2 id="specification">Specification</h2>
 
-<h3 id="spec-objsystem">Object System</h3>
+    <h3 id="spec-objsystem">Object System <code>(srfi 263)</code></h3>
 
-<h4 id="spec-objsystem-objects">Objects</h4>
+    <h4 id="spec-objsystem-exported-identifiers">Exported Identifiers</h4>
+
+    <p>Since all interaction happens via the object system itself, there is only one identifier exported by this library.</p>
+      
+    <ul>
+      <li>*the-root-object*</li>
+    </ul>
+
+    <h4 id="spec-objsystem-objects">Objects</h4>
 
     <p>The objects are based on closures. To send a message to that object, the closure is applied to the message selector (i.e., the slot name), followed by a number of arguments. The return value(s) of the message are returned from this application.</p>
 
-<h4 id="spec-objsystem-slots">Slots</h4>
+    <h4 id="spec-objsystem-slots">Slots</h4>
 
     <p>Objects contain slots, each of which is of one of three types:</p>
 
@@ -64,7 +72,7 @@ SPDX-License-Identifier: MIT
 
     <p><code>(lambda (self resend a b) (/ (+ a b) 2))</code></p>
 
-    <p>Every slot, regardless of its kind, can be associated with a setter method when it is created. Setter methods receive a single argument, and replace the value of the corresponding slot with this argument. Setter methods can be created automatically when a given slot is created, and are removed when the corresponding getter slot is removed (but not vice versa). Because of this, they are sometimes not considered to be slots, even though they are. See «Setters are Methods» for an example where this distinction is important.</p>
+    <p>Every slot, regardless of its kind, can be associated with a setter method when it is created. Setter methods receive a single argument, and replace the value of the corresponding slot with this argument. Setter methods can be created automatically when a given slot is created, and are removed when the corresponding getter slot is removed (but not vice versa).</p>
 
     <h4 id="spec-objsystem-messages">Messages</h4>
 
@@ -76,53 +84,59 @@ SPDX-License-Identifier: MIT
 
     <p>When a slot for a message is not found in the current object, all its parent slots are queried recursively, i.e. parent objects which don't know the slot query their parents recursively.</p>
 
-    <p>If no parent knows the slot, the original message receiving object is sent a message-not-understood message. If more than one parent knows the slot, the original message receiving object is sent an ambiguous-message-send message. See «Root Objects» for a documentation of those messages. By default, they signal an error.</p>
+    <p>If no parent knows the slot, the original message receiving object is sent a message-not-understood message. If more than one parent knows the slot, the original message receiving object is sent an ambiguous-message-send message. By default, they signal an error. Both are normal slots that can be overridden.</p>
 
-    <p>Method slots can decide not to handle a message, but rather pass it up the inheritance tree for other handlers. For this purpose, they are passed a procedure commonly called <code>resend</code>. See «Slots» for an explanation of method slots.</p>
+    <h5 id="spec-objsystem-resend"><code>resend target-override . args</code> - <i>procedure</i></h5>
+
+    <p>Method slots can decide not to handle a message, but rather pass it up the inheritance tree for other handlers. For this purpose, they are passed a procedure commonly called <code>resend</code>. As the first argument, it takes a <i>target-override</i>, which can simply be <code>#f</code> to traverse the entire ancestoral tree to find a class capable of handling the message, or it can be a specific class, which in that point becomes the starting point for the search. The latter can be useful in multiple inheritance scenarios where an <i>ambiguous-message-send</i> would be triggered otherwise. As further arguments, it takes the arguments of the targeted method.</p>
 
     <p>It is important to understand the difference between sending a message to an object and re-sending it to the object. When a message is just sent to an object, methods will get that object as the <code>self</code> argument. When a message is resent, <code>self</code> instead refers to the object it was originally sent to.</p>
 
     <h4 id="spec-objsystem-interface">Interface</h4>
 
-    <p>Since objects are created by sending a clone message to other objects, there has to be a kind of root object.</p>
-
     <h5 id="spec-objsystem-the-root-object"><code>*the-root-object*</code> - <i>class</i></h5>
 
-    <p>This is the default root object. This should be used as the root of the object hierarchy in a program.</p>
+    <p>This is the root object. This should be used as the root of the object hierarchy in a program.</p>
 
-    <p>Root objects contain a number of slots by default.</p>
+    <p>The root object contains a number of slots by default.</p>
 
-    <h5 id="spec-objsystem-clone"><code>clone</code> - <i>message</i></h5>
+    <h5 id="spec-objsystem-derive"><code>derive</code> - <i>message</i></h5>
 
-    <p>Return a clone of the message recipient. This creates a new object with a single slot, <code>parent</code>, which points to the object cloned from.</p>
+    <p>Return an object derived of the message recipient. This creates a new object with two slots: <code>parent</code>, which points to the object derived from; and <code>mirror</code>, see below.</p>
+
+    <h5 id="spec-objsystem-copy"><code>copy</code> - <i>message</i></h5>
+
+    <p>Return a copy of the message recipient. This creates an object with the messages and slots copied from its parents. Implementations must at least copy the list of messages and slots equivalent to using SRFI-1's <i>list-copy</i>, but may also deep-copy the messages and slots.</p>
 
     <h5 id="spec-objsystem-mirror"><code>mirror</code> - <i>message</i></h5>
 
-    <p>Return a mirror object that contains various slots providing reflection information about the receiver.</p>
+    <p>Return a mirror object that contains various slots providing reflection information about the receiver. Mirror objects are full-featured objects that can be modified and derived. An object's mirror object is a descendant of that object's parent's mirror.</p>
 
-    <h5 id="spec-objsystem-add-value-slot"><code>add-value-slot! getter [setter] value</code> - <i>message</i></h5>
+    <h5 id="spec-objsystem-add-value-slot"><code>set-value-slot! getter [setter] value</code> - <i>message</i></h5>
 
     <p>Add a new value slot to the recipient. The value of the slot can be retrieved with the getter message. If a setter message is given, that message can be used to change the value of the slot.</p>
 
-    <h5 id="spec-objsystem-add-method-slot"><code>add-method-slot! getter [setter] proc</code> - <i>message</i></h5>
+    <p>Using the setter of a value slot will set the value of that slot on the <i>self</i> object, thus implicitly creating a value slot on that object.</p>
+
+    <h5 id="spec-objsystem-add-method-slot"><code>set-method-slot! getter [setter] proc</code> - <i>message</i></h5>
 
     <p>Add a method slot to the recipient. The slot procedure can be invoked with the getter message. The procedure will be invoked with a <code>self</code> argument bound to the object that received the message, a <code>resend</code> procedure to resend the message if the method does not want to handle it directly, and all further arguments passed to the message send.</p>
 
     <p>If a setter message is given, it can be used to change the procedure.</p>
 
-    <h5 id="spec-objsystem-add-parent-slot"><code>add-parent-slot! getter [setter] parent</code> - <i>message</i></h5>
+    <h5 id="spec-objsystem-add-parent-slot"><code>set-parent-slot! getter [setter] parent</code> - <i>message</i></h5>
 
     <p>Add a parent slot to the recipient. Parent slots are searched for slots not found directly in the object. The setter message, if given, can be used to later change the value of the parent slot.</p>
 
     <h5 id="spec-objsystem-delete-slot"><code>delete-slot! name</code> - <i>message</i></h5>
 
-    <p>Delete the slot named <code>name</code> from the receiving object. This also removes the setter corresponding to <code>name</code>, if any. Beware that the parents might contain the same slot, so a message send can still succeed even after a slot is deleted.</p>
+    <p>Delete the slot named <code>name</code> from the receiving object. This also removes the setter corresponding to <code>name</code>, if any. Beware that the parents might contain a slot of the same name, so a message send can still succeed even after a slot is deleted.</p>
 
-    <h5 id="spec-objsystem-message-not-understood"><code>message-not-understood message args</code> - <i>message</i></h5>
+    <h5 id="spec-objsystem-message-not-understood"><code>message-not-understood self message args</code> - <i>message</i></h5>
 
     <p>This is received when the message <code>message</code> with the arguments <code>args</code> to the object was not understood. The root object just signals an error.</p>
 
-    <h5 id="spec-objsystem-ambiguous-send"><code>ambiguous-message-send message args</code> - <i>message</i></h5>
+    <h5 id="spec-objsystem-ambiguous-send"><code>ambiguous-message-send self message args</code> - <i>message</i></h5>
 
     <p>This is received when the message <code>message</code> with arguments <code>args</code> to the object would have reached multiple parents. The root object just signals an error.</p>
 
@@ -134,41 +148,58 @@ SPDX-License-Identifier: MIT
 
     <p>A predicate message that returns <code>#t</code> if <i>object</i> is an ancestor of the mirrored object, and <code>#f</code> if not.</p>
 
+    <h5 id="spec-mirror-immediate-ancestor-list"><code>immediate-ancestor-list</code> - <i>message</i></h5>
+
+    <p>This message returns a raw list of all immediate ancestors - the ones listed as parent slots - of the mirrored object.</p>
+
+    <h5 id="spec-mirror-full-ancestor-list"><code>full-ancestor-list</code> - <i>message</i></h5>
+
+    <p>This message returns a raw list of all ancestors - all the way up to the root object - of the mirrored object.</p>
+
     <h5 id="spec-mirror-immediate-slot-list"><code>immediate-slot-list</code> - <i>message</i></h5>
 
-    <p>This message returns a list of slots in the receiving object. The elements of the list are lists with three elements each:</p>
+    <p>This message returns a list of slots in the mirrored object. For a freshly derived object, these will be <i>parent</i> and <i>mirror</i>. The elements of the list are lists with three elements each:</p>
 
     <ul>
-      <li>getter-name</li>
+      <li>getter-name / method-name</li>
       <li>setter-name or <code>#f</code></li>
       <li>type, which is one of the symbols <code>value</code>, <code>method</code>, or <code>parent</code>
     </ul>
 
     <h5 id="spec-mirror-full-slot-list"><code>full-slot-list</code> - <i>message</i></h5>
 
-    <p>This message returns a list of slots in the receiving object and all its ancestors. The elements of the list are lists with three elements each:</p>
+    <p>This message returns a list of slots in the mirrored object and all its ancestors. The elements of the list are lists with three elements each:</p>
 
     <ul>
-      <li>getter-name</li>
+      <li>getter-name / method-name</li>
       <li>setter-name or <code>#f</code></li>
       <li>type, which is one of the symbols <code>value</code>, <code>method</code>, or <code>parent</code>
     </ul>
 
     <h3 id="spec-sugar">Syntactic Sugar <code>(srfi 263 syntax)</code></h3>
+    
+    <h4 id="spec-sugar-exported-identifiers">Exported Identifiers</h4>
+
+    <ul>
+      <li>define-method</li>
+      <li>define-object</li>
+      <li>derive-object</li>
+      <li>copy-object</li>
+    </ul>
 
     <h4 id="spec-sugar-define-method"><code>define-method (obj message self resend . args) body ...</code> - <i>syntax</i></h4>
 
-    <p>This is syntactic sugar for the often-used idiom to define a method slot by sending an <code>add-method-slot!</code> message with a message name and a lambda form with <code>self</code>, <code>resend</code>, and <code>args</code> formals, and a <code>body</code>. This shortens the following code:</p>
+    <p>This is syntactic sugar for the often-used idiom to define a method slot by sending an <code>set-method-slot!</code> message with a message name and a lambda form with <code>self</code>, <code>resend</code>, and <code>args</code> formals, and a <code>body</code>. This shortens the following code:</p>
 
-    <p><code>(obj 'add-method-slot!
-        'average
-        (lambda (self resend a b)
-        (/ (+ a b) 2)))</code></p>
+    <p><pre><code>(obj 'set-method-slot!
+          `average
+          (lambda (self resend a b)
+          (/ (+ a b) 2)))</code></pre></p>
 
     <p>to this:</p>
 
-    <p><code>(define-method (obj 'average self resend a b)
-        (/ (+ a b) 2))</code></p>
+    <p><pre><code>(define-method (obj average self resend a b)
+          (/ (+ a b) 2))</code></pre></p>
 
     <h4 id="spec-sugar-define-object"><code>define-object name (parent other-parents ...) slots ...</code> - <i>syntax</i></h4>
 
@@ -180,19 +211,27 @@ SPDX-License-Identifier: MIT
 
     <p>This allows for shortening the following example:</p>
 
-    <p><code>(define o (*the-root-object* 'clone))
-        (o 'add-value-slot! 'constant 'set-constant! 5)
-        (o 'add-method-slot! 'add
+    <p><pre><code>(define o (*the-root-object* 'derive))
+          (o 'set-value-slot! `constant `set-constant! 5)
+          (o 'set-method-slot! `add
           (lambda (self resend summand)
-            (+ summand (self 'constant)))))
-    </code></p>
+          (+ summand (self 'constant)))))
+    </pre></code></p>
 
     <p>into this:</p>
 
-    <p><code>(define-object o (*the-root-object*)
-        (constant set-constant! 5)
-        ((add self resend summand)
-          (+ summand (self 'constant))))</code></p>
+    <p><pre><code>(define-object o (*the-root-object*)
+          (constant set-constant! 5)
+          ((add self resend summand)
+          (+ summand (self 'constant))))</code></pre></p>
+
+    <h4 id="spec-sugar-derive-object"><code>derive-object (parent other-parents ...) slots ...</code> - <i>syntax</i></h4>
+
+    <p>This works exactly like <i>define-object</i>, but returns the resulting object instead of assigning it to a variable.</p>
+
+    <h4 id="spec-sugar-copy-object"><code>copy-object (parent other-parents ...)</code> - <i>syntax</i></h4>
+
+    <p>This copies the object from its first parent instead of deriving it, and otherwise works just like <i>derive-object</i>.</p>
 
     <h3 id="spec-further">Further Concepts and Thoughts</h3>
 
@@ -200,60 +239,39 @@ SPDX-License-Identifier: MIT
 
     <p>Message names don't have any required type. They are only compared using <code>eq?</code>. Because of this, any Scheme object can be used a message name. This means that it is possible to use a private Scheme value, e.g. a freshly allocated list, as a slot name. This can be used to keep slot names private, since it is not possible to create an object which is <code>eq?</code> to such an object except by receiving a reference to that object.</p>
 
-<p>Please follow the linguistic conventions described in the <a
-href="/srfi-faq.html#conventions">FAQ</a>.  In particular, please
-follow the conventions about the use of the terms <dfn>must,</dfn> <dfn>must not,</dfn>
-<dfn>required,</dfn> <dfn>shall,</dfn> <dfn>shall not,</dfn> <dfn>should,</dfn> <dfn>should not,</dfn>
-<dfn>recommended,</dfn> <dfn>may,</dfn> and <dfn>optional</dfn> defined by <a
-href="https://www.ietf.org/rfc/rfc2119.html">RFC 2119</a>.  This
-convention has been adopted by R7RS Small, too, in section 1.3.2
-(<a href="https://small.r7rs.org/attachment/r7rs.pdf">PDF</a>).</p>
+    <h2 id="implementation">Implementation</h2>
 
-<p>Also by convention, the phrase <dfn>it is an error to <em>X</em></dfn> is used in
-Scheme documents to mean that <em>X</em> is not allowed, but to leave
-it up to the implementer to decide what to do in response.
-Implementations may signal an error, assign some new meaning to
-<em>X</em>, or fail catastrophically.</p>
+    <p>The reference implementation is written in pure R<sup>7</sup>RS Small, tested in Chicken Scheme. The reference implementation source can be found <a href="https://github.com/scheme-requests-for-implementation/srfi-263/" target="_blank">here</a>.
 
-<h2 id="implementation">Implementation</h2>
+      <h2 id="acknowledgements">Acknowledgements</h2>
 
-<p style="color: red;">??? explanation of how it meets the sample implementation
-requirement (see <a href="srfi-process.html">process</a>), and the
-code, if possible, or a link to it</p>
+    <p>Thanks to John Cowan for suggesting the creation of this SRFI; to Felix Winkelmann and the Chicken Community for support and for sparking my interest in Scheme in the first place; and to Arthur A. Gleckler for looking after me and guiding me through the SRFI process; and of course Jorgen Schaefer, who made the Prometheus object system after which this SRFI is modelled.</p>
 
-<a href="srfi-minus-???-sample.scm" style="color: red;">Source for the sample implementation.</a>
+    <h2 id="copyright">Copyright</h2>
+    <p>&copy; 2025 Daniel Ziltener, Jorgen Schaefer.</p>
 
-<h2 id="acknowledgements">Acknowledgements</h2>
+    <p>
+      Permission is hereby granted, free of charge, to any person
+      obtaining a copy of this software and associated documentation files
+      (the "Software"), to deal in the Software without restriction,
+      including without limitation the rights to use, copy, modify, merge,
+      publish, distribute, sublicense, and/or sell copies of the Software,
+      and to permit persons to whom the Software is furnished to do so,
+      subject to the following conditions:</p>
 
-<p style="color: red;">??? credit where it is due.  For example, please consider
-acknowledging people on the SRFI mailing list who have contributed to
-the discussion.</p>
+    <p>
+      The above copyright notice and this permission notice (including the
+      next paragraph) shall be included in all copies or substantial
+      portions of the Software.</p>
+    <p>
+      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+      MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+      NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+      BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+      ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+      CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+      SOFTWARE.</p>
 
-<h2 id="copyright">Copyright</h2>
-<p>&copy; 2025 Daniel Ziltener, Jorgen Schaefer.</p>
-
-<p>
-  Permission is hereby granted, free of charge, to any person
-  obtaining a copy of this software and associated documentation files
-  (the "Software"), to deal in the Software without restriction,
-  including without limitation the rights to use, copy, modify, merge,
-  publish, distribute, sublicense, and/or sell copies of the Software,
-  and to permit persons to whom the Software is furnished to do so,
-  subject to the following conditions:</p>
-
-<p>
-  The above copyright notice and this permission notice (including the
-  next paragraph) shall be included in all copies or substantial
-  portions of the Software.</p>
-<p>
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-  NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
-  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
-  ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-  SOFTWARE.</p>
-
-  <hr>
-  <address>Editor: <a href="mailto:srfi-editors+at+srfi+dot+schemers+dot+org">Arthur A. Gleckler</a></address></body></html>
+    <hr>
+    <address>Editor: <a href="mailto:srfi-editors+at+srfi+dot+schemers+dot+org">Arthur A. Gleckler</a></address></body></html>
