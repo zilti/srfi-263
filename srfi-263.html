@@ -51,6 +51,11 @@
 
     <ul>
       <li><code>*the-root-object*</code></li>
+      <li><code>make-slot</code></li>
+      <li><code>slot?</code></li>
+      <li><code>slot-getter</code></li>
+      <li><code>slot-setter</code></li>
+      <li><code>slot-type</code></li>
     </ul>
 
     <h4 id="spec-objsystem-objects">Objects</h4>
@@ -75,6 +80,30 @@
 
     <p>Every slot, regardless of its kind, can be associated with a setter method when it is created. Setter methods receive a single argument, and replace the value of the corresponding slot with this argument. Setter methods can be created automatically when a given slot is created, and are removed when the corresponding getter slot is removed (but not vice versa).</p>
 
+    <h5 id="spec-objsystem-slot-record"><code>slot</code> - <i>record</i></h5>
+
+    <p>Via reflection (see <i><a href="#spec-mirror">mirror</a></i>), slots are returned as a list of <i>slot</i> records.</p>
+
+    <h5 id="spec-objsystem-slot-make"><code>make-slot</code> - <i>procedure</i></h5>
+
+    <p>Creates a new <i>slot</i> record instance.</p>
+
+    <h5 id="spec-objsystem-slot-pred"><code>slot?</code> - <i>procedure</i></h5>
+
+    <p>The predicate for the record.</p>
+
+    <h5 id="spec-objsystem-slot-getter"><code>slot-getter</code> - <i>procedure</i></h5>
+
+    <p>Returns the getter message name for this slot.</p>
+
+    <h5 id="spec-objsystem-slot-setter"><code>slot-setter</code> - <i>procedure</i></h5>
+
+    <p>Returns the setter message name for this slot, if it is a settable slot; returns <code>#f</code> otherwise.</p>
+
+    <h5 id="spec-objsystem-slot-type"><code>slot-type</code> - <i>procedure</i></h5>
+
+    <p>Returns the slot's type. This is one of <code>value</code>, <code>method</code> or <code>parent</code>.</p>
+            
     <h4 id="spec-objsystem-messages">Messages</h4>
 
     <p>Following the original concepts of object oriented programming, SRFI-263 uses messages to communicate with and between objects. To send a message to an object, the object has to be invoked with the target slot as first argument, with the slot's arguments appended as further arguments. Sending a new <code>x</code> coordinate to a <code>point</code> object looks like this:</p>
@@ -103,11 +132,15 @@
 
     <h5 id="spec-objsystem-derive"><code>derive</code> - <i>message</i></h5>
 
-    <p>Return an object derived of the message recipient. This creates a new object with two slots: <code>parent</code>, which points to the object derived from; and <code>mirror</code>, see below.</p>
+    <p>Return an object derived of the message recipient. This creates a new object with the slot <code>parent</code>, which points to the object derived from; additionally, implementations may add a second slot <code>mirror</code>.</p>
 
     <h5 id="spec-objsystem-copy"><code>copy</code> - <i>message</i></h5>
 
-    <p>Return a copy of the message recipient. This creates an object with the messages and slots shallow-copied from its parents.</p>
+    <p>Return a copy of the message recipient. This creates an object with the messages and slots shallow-copied from its parent.</p>
+
+    <h5 id="spec-objsystem-deep-copy"><code>deep-copy</code> - <i>message</i></h5>
+
+    <p>This message is optional. It returns a copy of the message recipient with all messages and slots deep-copied from its parent.</p>
 
     <h5 id="spec-objsystem-mirror"><code>mirror</code> - <i>message</i></h5>
 
@@ -159,23 +192,11 @@
 
     <h5 id="spec-mirror-immediate-slot-list"><code>immediate-slot-list</code> - <i>message</i></h5>
 
-    <p>This message returns a list of slots in the mirrored object. For a freshly derived object, these will be <i>parent</i> and <i>mirror</i>. The elements of the list are lists with three elements each:</p>
-
-    <ul>
-      <li>getter-name / method-name</li>
-      <li>setter-name or <code>#f</code></li>
-      <li>type, which is one of the symbols <code>value</code>, <code>method</code>, or <code>parent</code>
-    </ul>
+    <p>This message returns a list of slots in the mirrored object. Each entry is a <a href="#spec-objsystem-slot-record">slot record</a>.</p>
 
     <h5 id="spec-mirror-full-slot-list"><code>full-slot-list</code> - <i>message</i></h5>
 
-    <p>This message returns a list of slots in the mirrored object and all its ancestors. The elements of the list are lists with three elements each:</p>
-
-    <ul>
-      <li>getter-name / method-name</li>
-      <li>setter-name or <code>#f</code></li>
-      <li>type, which is one of the symbols <code>value</code>, <code>method</code>, or <code>parent</code>
-    </ul>
+    <p>This message returns a list of slots in the mirrored object and all its ancestors. Each entry is a <a href="#spec-objsystem-slot-record">slot record</a>.</p>
 
     <h3 id="spec-sugar">Syntactic Sugar <code>(srfi 263 syntax)</code></h3>
 
