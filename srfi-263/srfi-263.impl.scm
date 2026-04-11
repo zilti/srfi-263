@@ -5,48 +5,44 @@
         (srfi 1)
         (trace))
 
-;;; Helpers
-
-(define (alist-set alist name value)
-  (cond
-   ((assq name alist)
-    => (lambda (entry)
-         (set-cdr! entry value)
-         alist))
-   (else
-    (alist-cons name value alist))))
-
 ;;; Core system
+
+(define-record-type slot
+  (make-slot getter setter type)
+  slot?
+  (getter slot-getter)
+  (setter slot-setter)
+  (type slot-type))
 
 (define (delete-slot! obj-data slot)
   (let* ((message-alist (get-message-alist obj-data))
          (slot-list (get-slot-list obj-data))
          (parent-list (get-parent-list obj-data))
-         (setter-predicate (lambda (item) (eq? (cadr item) slot)))
+         (setter-predicate (lambda (item) (eq? (slot-setter item) slot)))
          (is-setter? (find setter-predicate slot-list))
          (slot-predicate (lambda (item)
-                           (or (eq? (car item) slot)
-                              (eq? (cadr item) slot))))
+                           (or (eq? (slot-getter item) slot)
+                              (eq? (slot-setter item) slot))))
          (slots (filter slot-predicate slot-list)))
     (if (= 1 (length slots))
         (let ((slot (car slots)))
           (set-message-alist!
            obj-data
            (if is-setter?
-               (alist-delete (cadr slot) message-alist)
-               (alist-delete (car slot)
-                             (alist-delete (cadr slot) message-alist))))
+               (alist-delete (slot-setter slot) message-alist)
+               (alist-delete (slot-getter slot)
+                             (alist-delete (slot-setter slot) message-alist))))
           (set-slot-list!
            obj-data
            (if is-setter?
                (map (lambda (item)
                       (if (setter-predicate item)
-                          `(,(car item) #f ,(caddr item))
+                          (make-slot (slot-getter item) #f (slot-type item))
                           item))
                     slot-list)
                (remove slot-predicate slot-list)))
-          (if (eq? 'parent (caddr slot))
-              (set-parent-list! (delete (car slot) parent-list)))))))
+          (if (eq? 'parent (slot-type slot))
+              (set-parent-list! (delete (slot-getter slot) parent-list)))))))
 
 (define (slot-add-message-name type)
   (case type
@@ -74,7 +70,7 @@
     (set-message-alist!
      obj-data (append new-messages (get-message-alist obj-data)))
     (set-slot-list!
-     obj-data (cons `(,getter-name ,setter-name ,type) (get-slot-list obj-data)))))
+     obj-data (cons (make-slot getter-name setter-name type) (get-slot-list obj-data)))))
 
 (define (set-slot! obj-data type getter-name . args)
   (let* ((setter? (< 1 (length args)))
@@ -93,7 +89,7 @@
             (lambda (self)
               (cond ((or
                       (assq name message-alist)
-                      (assq name ((self 'mirror) 'immediate-message-alist)))
+                      (assq name (get-message-alist ((self 'mirror) '--obj-data))))
                      => cdr)
                     (else #f)))))
     mfinder))
@@ -125,7 +121,7 @@
               (values 'message-not-understood #f)))))))))
 
 (define (recursive-ancestor-collector self)
-  (let ((parents ((self 'mirror) 'immediate-ancestor-list)))
+  (let ((parents (get-parent-list ((self 'mirror) '--obj-data))))
     (if (null? parents)
         (list self)
         (apply lset-union
@@ -140,7 +136,7 @@
              (eq? (car a) (car b)))
            (list)
            (map (lambda (class)
-                  ((class 'mirror) 'immediate-slot-list))
+                  (get-slot-list ((class 'mirror) '--obj-data)))
                 parents))))
 
 ;;;; Method running
@@ -210,10 +206,10 @@
                 immediate-ancestor-list full-ancestor-list
                 immediate-slot-list full-slot-list)
    (list (lambda (self resend) obj-data)
-         (lambda (self resend) (get-message-alist obj-data))
-         (lambda (self resend) (get-parent-list obj-data))
+         (lambda (self resend) (list-copy (get-message-alist obj-data)))
+         (lambda (self resend) (list-copy (get-parent-list obj-data)))
          (lambda (self resend) (recursive-ancestor-collector self))
-         (lambda (self resend) (get-slot-list obj-data))
+         (lambda (self resend) (list-copy (get-slot-list obj-data)))
          (lambda (self resend) (recursive-slot-collector self))))
   mirror)
 
@@ -229,7 +225,7 @@
                  (get-message-alist obj-data)))
     (set-slot-list!
      obj-data
-     (append `((set-method-slot! #f method)) (get-slot-list obj-data)))
+     (append (list (make-slot set-method-slot! #f 'method)) (get-slot-list obj-data)))
     (set-method-slot!
      obj-data 'mirror
      (lambda (self resend)
