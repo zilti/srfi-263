@@ -1,3 +1,7 @@
+; SPDX-FileCopyrightText: 2026 Daniel Ziltener
+;
+; SPDX-License-Identifier: MIT
+
 (import (scheme base)
         (srfi 263))
 

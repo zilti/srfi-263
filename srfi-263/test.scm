@@ -1,3 +1,7 @@
+; SPDX-FileCopyrightText: 2026 Daniel Ziltener
+;
+; SPDX-License-Identifier: MIT
+
 (include "srfi-263.scm")
 (import (srfi 263))
 

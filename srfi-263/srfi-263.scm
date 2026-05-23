@@ -1,3 +1,7 @@
+; SPDX-FileCopyrightText: 2026 Daniel Ziltener
+;
+; SPDX-License-Identifier: MIT
+
 (define-library (srfi 263)
   (export *the-root-object*
           slot?
