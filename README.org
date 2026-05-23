@@ -11,7 +11,7 @@ keywords: [[https://srfi.schemers.org/?keywords=object-oriented][Object-Oriented
 
 This repository hosts [[https://srfi.schemers.org/srfi-263/][SRFI 263]]: Prototype Object System, a [[https://srfi.schemers.org/][Scheme Request for Implementation]].
 
-This SRFI is in /draft/ status.
+This SRFI is in /final/ status.
 See also [[/srfi-20/][SRFI 20: Simple object system]].
 The full documentation for this SRFI can be found in the [[https://srfi.schemers.org/srfi-263/srfi-263.html][SRFI Document]].
 
