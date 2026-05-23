@@ -35,6 +35,45 @@
 
     <p>This SRFI proposes a "Self"-inspired prototype object system. Such an object system works by having prototype objects that are derived repeatedly to modify, extend, and use them, and is interacted with by passing messages.</p>
 
+    <h2 id="toc">Table of contents</h2>
+    <ul>
+      <li><a href="#rationale">Rationale</a></li>
+      <li>
+        <a href="#specification">Specification</a>
+        <ul>
+          <li>
+            <a href="#spec-objsystem">Object System (srfi 263)</a>
+            <ul>
+              <li><a href="#spec-objsystem-exported-identifiers">Exported Identifiers</a></li>
+              <li><a href="#spec-objsystem-objects">Objects</a></li>
+              <li><a href="#spec-objsystem-slots">Slots</a></li>
+              <li><a href="#spec-objsystem-messages">Messages</a></li>
+              <li><a href="#spec-objsystem-inheritance">Inheritance</a></li>
+              <li><a href="#spec-objsystem-interface">Interface</a></li>
+              <li><a href="#spec-mirror">Mirror Interface</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#spec-sugar">Syntactic Sugar (srfi 263 syntax)</a>
+            <ul>
+              <li><a href="#spec-sugar-exported-identifiers">Exported Identifiers</a></li>
+              <li><a href="#spec-sugar-define-method">define-method (obj message self resend . args) body ... - syntax</a></li>
+              <li><a href="#spec-sugar-define-object">define-object name (parent other-parents ...) slots ... - syntax</a></li>
+              <li><a href="#spec-sugar-derive-object">derive-object (parent other-parents ...) slots ... - syntax</a></li>
+              <li><a href="#spec-sugar-copy-object">copy-object (parent other-parents ...) - syntax</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#spec-further">Further Concepts and Thoughts</a>
+            <ul>
+              <li><a href="#spec-further-private-messages">Private Messages</a></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li><a href="#implementation">Implementation</a></li>
+      <li><a href="#acknowledgements">Acknowledgements</a></li>
+    </ul>
 
     <h2 id="rationale">Rationale</h2>
 
