@@ -3,7 +3,8 @@
 ; SPDX-License-Identifier: MIT
 
 (define-library (srfi 263 syntax)
-  (export define-method
-          clone-object
+  (export set-method!
+          derive-object
+          copy-object
           define-object)
   (include "srfi-263-syntax.impl.scm"))

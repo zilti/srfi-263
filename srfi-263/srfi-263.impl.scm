@@ -44,7 +44,8 @@
                     slot-list)
                (remove slot-predicate slot-list)))
           (if (eq? 'parent (slot-type slot))
-              (set-parent-list! (delete (slot-getter slot) parent-list)))))))
+              (set-parent-list! obj-data
+                                (delete (slot-getter slot) parent-list)))))))
 
 (define (slot-add-message-name type)
   (case type
