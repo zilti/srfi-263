@@ -90,6 +90,10 @@
           (lambda (exc) (cont #t))
         (lambda () (mathclass 'reset 1)
            (cont #f))))))
+
+  (assert (= 2 (length ((mathclass 'mirror) 'immediate-ancestor-list))))
+  (mathclass 'delete-slot! 'adder)
+  (assert (= 1 (length ((mathclass 'mirror) 'immediate-ancestor-list))))
   )
 
 ;;; Syntax

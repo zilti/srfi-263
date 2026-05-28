@@ -28,6 +28,11 @@
          (slots (filter slot-predicate slot-list)))
     (if (= 1 (length slots))
         (let ((slot (car slots)))
+          (if (eq? 'parent (slot-type slot))
+              (set-parent-list! obj-data
+                                (delete
+                                 ((cdr (assq (slot-getter slot) message-alist)) #f #f)
+                                 parent-list)))
           (set-message-alist!
            obj-data
            (if is-setter?
@@ -42,10 +47,7 @@
                           (make-slot (slot-getter item) #f (slot-type item))
                           item))
                     slot-list)
-               (remove slot-predicate slot-list)))
-          (if (eq? 'parent (slot-type slot))
-              (set-parent-list! obj-data
-                                (delete (slot-getter slot) parent-list)))))))
+               (remove slot-predicate slot-list)))))))
 
 (define (slot-add-message-name type)
   (case type
@@ -119,6 +121,32 @@
          (else
           (if handler
               (if (= 1 handler-count)
+                  (values handler found)
+                  (values 'ambiguous-message-send #f))
+              (values 'message-not-understood #f)))))))))
+
+(define (recursive-lookup self checker skip?)
+  (cond
+   ((and (not skip?) (checker self))
+    => (lambda (alist-entry)
+         (values alist-entry #t)))
+   (else
+    (let ((obj-data ((self 'mirror) '##srfi-263#obj-data)))
+      (let loop ((parents (get-parent-list obj-data))
+                 (handlers '())
+                 (handler #f)
+                 (found #f))
+        (cond
+         ((not (null? parents))
+          (let-values (((new-handler new-found)
+                        (recursive-lookup (car parents) checker #f)))
+            (loop (cdr parents)
+                  (if new-found (lset-adjoin eq? handlers new-handler) handlers)
+                  (if new-found new-handler handler)
+                  (or new-found found))))
+         (else
+          (if handler
+              (if (= 1 (length handlers))
                   (values handler found)
                   (values 'ambiguous-message-send #f))
               (values 'message-not-understood #f)))))))))
